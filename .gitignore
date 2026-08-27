@@ -1,0 +1,23 @@
+# 카드뉴스 제작 도구 — 무시 목록
+
+# 도구에서 내보낸 PNG 결과물
+cardnews-*.png
+*.zip
+
+# 로컬 폰트 (라이선스 파일은 각자 받아서 넣는다)
+site/fonts/
+
+# OS 부산물
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# 에디터
+.vscode/
+.idea/
+
+# Vercel
+.vercel/
+
+# 브랜드 키트 — 공개 저장소이므로 커밋하지 않는다 (로컬에만 보관)
+brand-kit.txt
