@@ -295,6 +295,18 @@
         <input id="c-desc" type="range" min="0.7" max="1.3" step="0.02" />
       </div>
 
+      <div class="f full">
+        <label>매체별 브랜드 색</label>
+        <label style="font-weight:600;opacity:1;font-size:13px;letter-spacing:0;cursor:pointer">
+          <input id="c-theme" type="checkbox" style="width:auto;margin-right:8px" />
+          출처를 고르면 그 신문사 로고 색으로 카드 색을 자동 변경
+        </label>
+        <div class="note" style="margin-top:6px">
+          한인포스트 하늘색 · 자카르타경제신문 노랑 · The Jakarta Post 검정+빨강 ·
+          Kompas 주황 · ANTARA 빨강 · 대사관 남색. 끄면 아래 색을 직접 씁니다.
+        </div>
+      </div>
+
       <div class="f">
         <label>배경색 · 메인</label>
         <input id="c-main" type="color" />
@@ -317,7 +329,7 @@
         <label>추천 배경 (Pexels)</label>
         <div class="thumbs" id="thumbs"></div>
         <div class="btns" style="margin-top:8px">
-          <button class="gold sm" id="b-kitbg">브랜드 기본 배분</button>
+          <button class="gold sm" id="b-kitbg">기사 주제에 맞게 배분</button>
           <button class="sm" id="b-reset">키트 기본값 복원</button>
         </div>
       </div>
@@ -460,12 +472,66 @@ window.KIT_BACKGROUNDS = [
   /* ── 브랜드 키트 상수 ───────────────────── */
   var KIT = { main:'#0B2545', bg:'#061527', accent:'#F4C95D', text:'#E8EEF8' };
 
-  /* 추천 배경 (위 인라인 데이터) + 카드별 기본 배분 */
-  var BG = window.KIT_BACKGROUNDS || [];
-  var BG_MAP = { city:[1,5], docs:[2,3], rain:[4] };
+  /* 추천 배경
+     city·docs·rain 3장은 HTML에 인라인돼 있어 로컬 파일로 열어도 PNG 저장이
+     된다. 나머지는 images/ 에서 불러온다 — 배포된 https 주소에서는 같은
+     출처라 캔버스 오염 없이 저장되지만, 로컬 file:// 로 열면 저장이 막힌다. */
+  var BG = (window.KIT_BACKGROUNDS || []).concat([
+    { id:'fuel',        label:'주유기',        note:'연료',      src:'images/bg-fuel.jpg' },
+    { id:'fuel-night',  label:'야간 주유소',   note:'연료',      src:'images/bg-fuel-night.jpg' },
+    { id:'train',       label:'역 플랫폼',     note:'교통',      src:'images/bg-train.jpg' },
+    { id:'volcano',     label:'화산',          note:'재난',      src:'images/bg-volcano.jpg' },
+    { id:'volcano-air', label:'분화 연기',     note:'재난',      src:'images/bg-volcano-air.jpg' },
+    { id:'market',      label:'전통시장',      note:'물가',      src:'images/bg-market.jpg' },
+    { id:'money',       label:'루피아 지폐',   note:'환율',      src:'images/bg-money.jpg' },
+    { id:'money2',      label:'루피아 지폐 2', note:'환율',      src:'images/bg-money2.jpg' }
+  ]);
+
   function bgData(id){
-    for(var i=0;i<BG.length;i++) if(BG[i].id === id) return BG[i].data;
+    for(var i = 0; i < BG.length; i++){
+      if(BG[i].id === id) return BG[i].data || BG[i].src;
+    }
     return null;
+  }
+
+  /* 기사 주제에 맞는 배경을 고른다.
+     표지·마무리는 도시 톤, 내용 3장은 주제 사진을 번갈아 쓴다. */
+  var BG_TOPICS = [
+    { k:['연료','휘발유','경유','주유','bbm','유가','페르타맥스','페르탈리테','덱슬라이트'],
+      f:['fuel','fuel-night'] },
+    { k:['lpg','cng','가스통'],                                  f:['fuel','market'] },
+    { k:['환율','송금','환전','금리','달러','경상수지','외환보유액','루피아'],
+      f:['money','money2'] },
+    { k:['물가','생활비','식품','장바구니','마트','시장'],        f:['market','money2'] },
+    { k:['krl','통근','승차','하차','전철','환승','노선','버스','터미널','교통','도로'],
+      f:['train','city'] },
+    { k:['화산','분화','지진','시아가','대피'],                   f:['volcano','volcano-air'] },
+    { k:['우기','홍수','침수','태풍','호우'],                     f:['rain','city'] },
+    { k:['비자','체류','키타스','여권','규정','개정','제도','절차','서류','신청','세금'],
+      f:['docs','city'] }
+  ];
+
+  function topicBackgrounds(text){
+    var t = (text || '').toLowerCase(), best = null, bestScore = 0;
+    BG_TOPICS.forEach(function(r){
+      var s = 0;
+      r.k.forEach(function(k){
+        var kk = k.toLowerCase();
+        s += countOcc(t, kk) * kk.length;
+      });
+      if(s > bestScore){ bestScore = s; best = r.f; }
+    });
+    if(!best) best = ['city','docs'];
+    var b2 = best.length > 1 ? best[1] : best[0];
+    return ['city', best[0], b2, best[0], 'city'];
+  }
+
+  function applyTopicBg(){
+    var all = S.cards.map(function(c){ return (c.title||'') + ' ' + (c.desc||''); }).join(' ') + ' ' + S.topic;
+    var list = topicBackgrounds(all);
+    S.image = null;
+    S.cards.forEach(function(c, i){ c.bgRef = list[i] || 'city'; c.image = null; });
+    S.bgApplied = true;
   }
 
   var FONTS = {
@@ -554,15 +620,35 @@ window.KIT_BACKGROUNDS = [
       desc:'해당되는 분이 주변에 있으면 전달해 달라는 요청으로 닫습니다. 기사 원문 위치와 문의처를 함께 안내합니다.' }
   ];
 
-  /* 기사를 가져오는 곳 — 한국어 교민 매체 3곳 + 현지 주요 매체 3곳 */
+  /* 기사를 가져오는 곳 — 한국어 교민 매체 3곳 + 현지 주요 매체 3곳
+     theme 은 각 매체 로고에서 실측한 브랜드 색을 카드에 옮긴 것.
+       brand  로고 실측값 (기록용)
+       main   카드 위쪽 배경
+       bg     카드 아래쪽 배경
+       accent 상단 바·주제·강조선·기사 일자
+     TJP·ANTARA·Kompas 가 모두 붉은 계열이라 accent 만으로는 구분이
+     안 된다. 배경 색조를 검정 / 적 / 주황으로 갈라 한눈에 구분되게 했다. */
   var SOURCES = [
-    { name:'한인포스트',         domain:'haninpost.com' },
-    { name:'자카르타경제신문',   domain:'pagi.co.id' },
-    { name:'주인도네시아 대사관', domain:'id.mofa.go.kr' },
-    { name:'The Jakarta Post',   domain:'thejakartapost.com' },
-    { name:'Kompas',             domain:'kompas.com' },
-    { name:'ANTARA News',        domain:'antaranews.com' }
+    { name:'한인포스트',         domain:'haninpost.com',
+      brand:'#4DB2EC', main:'#062A45', bg:'#03131F', accent:'#4DB2EC' },
+    { name:'자카르타경제신문',   domain:'pagi.co.id',
+      brand:'#F0F028', main:'#26260A', bg:'#111103', accent:'#F0F028' },
+    { name:'주인도네시아 대사관', domain:'id.mofa.go.kr',
+      brand:'#0B2545', main:'#0B2545', bg:'#061527', accent:'#F4C95D' },
+    { name:'The Jakarta Post',   domain:'thejakartapost.com',
+      brand:'#DC2828', main:'#17110F', bg:'#070404', accent:'#DC2828' },
+    { name:'Kompas',             domain:'kompas.com',
+      brand:'#E55425', main:'#33200A', bg:'#150A03', accent:'#F5793A' },
+    { name:'ANTARA News',        domain:'antaranews.com',
+      brand:'#CC0000', main:'#3A0A0A', bg:'#170303', accent:'#FF4040' }
   ];
+
+  function sourceTheme(name){
+    for(var i = 0; i < SOURCES.length; i++){
+      if(SOURCES[i].name === (name || '').trim()) return SOURCES[i];
+    }
+    return null;
+  }
 
   var STORE = 'cardnews-kit-v3';
 
@@ -573,6 +659,7 @@ window.KIT_BACKGROUNDS = [
     titleScale:1, descScale:1,
     main:KIT.main, bg:KIT.bg, accent:KIT.accent,
     overlay:0.75, image:null,
+    themeBySource:true,
     bgApplied:false,
     source:SOURCES[0].name,
     sourceDomain:SOURCES[0].domain,
@@ -1145,6 +1232,7 @@ window.KIT_BACKGROUNDS = [
     $('c-bg').value = S.bg;
     $('c-accent').value = S.accent;
     $('c-ovl').value = S.overlay;
+    $('c-theme').checked = !!S.themeBySource;
     $('v-title').textContent = Math.round(S.titleScale * 100) + '%';
     $('v-desc').textContent = Math.round(S.descScale * 100) + '%';
     $('v-ovl').textContent = Math.round(S.overlay * 100) + '%';
@@ -1183,8 +1271,23 @@ window.KIT_BACKGROUNDS = [
       S.sourceDomain = s.domain;
       $('src-custom').style.display = 'none';
       $('c-source').value = s.name;
+      applySourceTheme();
     }
-    save(); render(); genCaption();
+    save(); syncPanel(); render(); genCaption();
+  });
+
+  /* 매체별 브랜드 색 적용 — 색상만 봐도 어느 신문사인지 알 수 있게 */
+  function applySourceTheme(){
+    if(!S.themeBySource) return;
+    var th = sourceTheme(S.source);
+    if(!th) return;
+    S.main = th.main; S.bg = th.bg; S.accent = th.accent;
+  }
+
+  on('c-theme','change', function(){
+    S.themeBySource = this.checked;
+    if(this.checked) applySourceTheme();
+    save(); syncPanel(); render();
   });
 
   on('c-source','input', function(){
@@ -1220,6 +1323,8 @@ window.KIT_BACKGROUNDS = [
       if(id==='c-main')   S.main   = this.value;
       if(id==='c-bg')     S.bg     = this.value;
       if(id==='c-accent') S.accent = this.value;
+      /* 색을 직접 만지면 매체 자동 테마를 끈다 — 다음 render에서 되돌아가지 않게 */
+      if(S.themeBySource){ S.themeBySource = false; $('c-theme').checked = false; }
       saveSoon(); render();
     });
   });
@@ -1248,15 +1353,7 @@ window.KIT_BACKGROUNDS = [
 
   /* ── 추천 배경 ──────────────────────────── */
   function applyKitBg(){
-    S.image = null;
-    S.cards.forEach(function(c){ c.bgRef = null; c.image = null; });
-    Object.keys(BG_MAP).forEach(function(id){
-      if(!bgData(id)) return;
-      BG_MAP[id].forEach(function(n){
-        if(S.cards[n-1]) S.cards[n-1].bgRef = id;
-      });
-    });
-    S.bgApplied = true;
+    applyTopicBg();
     save(); render();
   }
 
@@ -1271,7 +1368,7 @@ window.KIT_BACKGROUNDS = [
       var t = document.createElement('button');
       t.className = 'thumb';
       t.title = b.label + ' — 모든 카드에 적용';
-      t.innerHTML = '<img src="' + b.data + '" alt="">' +
+      t.innerHTML = '<img src="' + (b.data || b.src) + '" alt="">' +
                     '<span>' + b.label + '<em>' + b.note + '</em></span>';
       t.addEventListener('click', function(){
         S.image = null;
