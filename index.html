@@ -129,6 +129,16 @@
   .card .foot2 .fsrc{font-weight:800;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
   .card .foot2 .fdate{font-weight:800;letter-spacing:.02em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
   .card .foot2 .fnum{font-weight:800;letter-spacing:.08em;flex:none;}
+  /* 1:1 중앙 크롭 경계 — 미리보기 전용, PNG에는 안 들어간다 */
+  .card .safeline{
+    position:absolute;left:0;width:1080px;height:0;
+    border-top:3px dashed rgba(232,110,93,.55);pointer-events:none;
+  }
+  .card .safeline span{
+    position:absolute;right:14px;top:10px;
+    font-size:26px;font-weight:800;color:rgba(232,110,93,.8);
+    letter-spacing:.04em;
+  }
   [contenteditable]{outline:none;}
   [contenteditable]:focus{background:rgba(244,201,93,.14);box-shadow:0 0 0 4px rgba(244,201,93,.3);}
   .empty{opacity:.45;}
@@ -544,20 +554,27 @@ window.KIT_BACKGROUNDS = [
     var dfs = Math.round(44 * S.descScale);
     var tmax = Math.round(88 * S.titleScale);
 
+    /* 인스타가 4:5 이미지를 1:1로 중앙 크롭하면 위아래 (H-1080)/2 가 날아간다.
+       모든 글자를 그 안전 영역 안에 넣어야 어디서 보든 잘리지 않는다. */
+    var SAFE = Math.round((H - 1080) / 2);
+    var INSET = 60;
+
     var FOOT_FS = 34, FOOT_LH = 46;
-    var FOOT_TOP = H - 150;          // 출처·기사 일자 블록 시작
-    var DIV_Y    = FOOT_TOP - 46;    // 그 위 구분선
-    var TITLE_TOP = Math.round(H * 0.30);
+    var FOOT_TOP = H - SAFE - INSET - FOOT_LH * 2;   // 출처·기사 일자 2줄 블록
+    var DIV_Y    = FOOT_TOP - 40;
+    var TITLE_TOP = Math.round(H * 0.28);
+    var PAD = 72;                                    // 좌우 여백 (이전 90)
 
     return {
-      W:1080, H:H, PAD:90, CW:900, BAR:12,
-      EYE_C:150, EYE_FS:38, EYE_LH:52,
+      W:1080, H:H, PAD:PAD, CW:1080 - PAD * 2, BAR:12,
+      SAFE:SAFE,
+      EYE_C:Math.max(SAFE + 55, 110), EYE_FS:38, EYE_LH:52,
       TITLE_TOP:TITLE_TOP,
       TITLE_MAX:tmax,
       TITLE_MIN:Math.round(48 * S.titleScale),
       TITLE_LHR:1.22, TITLE_LINES:2,
-      RULE_GAP:44, RULE_W:110, RULE_H:8,
-      DESC_GAP:44, DESC_FS:dfs, DESC_LH:Math.round(dfs * 1.62), DESC_LINES:4,
+      RULE_GAP:40, RULE_W:110, RULE_H:8,
+      DESC_GAP:40, DESC_FS:dfs, DESC_LH:Math.round(dfs * 1.62), DESC_LINES:5,
       DIV_Y:DIV_Y,
       FOOT_TOP:FOOT_TOP, FOOT_FS:FOOT_FS, FOOT_LH:FOOT_LH,
       NUM_FS:40
@@ -728,6 +745,11 @@ window.KIT_BACKGROUNDS = [
 
         '<div class="divl" style="left:' + L.PAD + 'px;width:' + L.CW + 'px;top:' + L.DIV_Y + 'px;' +
           'background:' + rgba(S.accent, .55) + '"></div>' +
+
+        /* 미리보기 전용 — PNG에는 그려지지 않는다 */
+        (L.SAFE > 0 ?
+          '<div class="safeline" style="top:' + L.SAFE + 'px"><span>1:1 잘림선</span></div>' +
+          '<div class="safeline" style="top:' + (L.H - L.SAFE) + 'px"></div>' : '') +
 
         '<div class="foot2" style="left:' + L.PAD + 'px;width:' + L.CW + 'px;top:' + L.FOOT_TOP + 'px;' +
           'font-family:' + F.df + ';">' +
