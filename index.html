@@ -69,6 +69,13 @@
     font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
   }
   textarea:focus{outline:2px solid var(--accent);}
+  input[type=date]{
+    background:var(--main);border:1px solid var(--line);border-radius:9px;
+    color:var(--text);font:inherit;font-size:15px;font-weight:600;
+    padding:10px 12px;width:100%;min-width:0;
+  }
+  input[type=date]:focus{outline:2px solid var(--accent);}
+  input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.6;cursor:pointer;}
   input[type=text],select{
     background:var(--main);border:1px solid var(--line);border-radius:9px;
     color:var(--text);font:inherit;font-size:15px;font-weight:600;
@@ -109,13 +116,21 @@
   .card .bar{position:absolute;left:0;top:0;height:12px;}
   .card .eyebrow{position:absolute;display:flex;align-items:center;gap:16px;white-space:nowrap;overflow:hidden;font-weight:800;letter-spacing:.04em;}
   .card .eyebrow s{display:block;width:18px;height:18px;text-decoration:none;flex:none;}
-  .card .title{position:absolute;display:flex;align-items:center;white-space:nowrap;overflow:hidden;letter-spacing:-.02em;color:#fff;}
+  .card .title{
+    position:absolute;letter-spacing:-.03em;color:#fff;
+    word-break:keep-all;overflow-wrap:break-word;
+    display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;
+  }
   .card .rule{position:absolute;}
   .card .desc{position:absolute;word-break:keep-all;overflow-wrap:break-word;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;font-weight:600;}
-  .card .divl{position:absolute;height:2px;}
-  .card .foot{position:absolute;display:flex;align-items:center;justify-content:space-between;gap:20px;font-weight:700;}
-  .card .foot .src{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
-  .card .foot .num{font-weight:800;letter-spacing:.06em;flex:none;}
+  .card .divl{position:absolute;height:3px;}
+  .card .foot2{
+    position:absolute;display:flex;align-items:flex-start;justify-content:space-between;gap:24px;
+  }
+  .card .foot2 .fmeta{min-width:0;}
+  .card .foot2 .fsrc{font-weight:800;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+  .card .foot2 .fdate{font-weight:800;letter-spacing:.02em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+  .card .foot2 .fnum{font-weight:800;letter-spacing:.08em;flex:none;}
   [contenteditable]{outline:none;}
   [contenteditable]:focus{background:rgba(244,201,93,.14);box-shadow:0 0 0 4px rgba(244,201,93,.3);}
   .empty{opacity:.45;}
@@ -154,6 +169,22 @@
         <div class="f full">
           <label>주제 (모든 카드 상단에 표시)</label>
           <input id="c-topic" type="text" />
+        </div>
+
+        <div class="f">
+          <label>출처 (기사 매체·기관)</label>
+          <input id="c-source" type="text" placeholder="예: 한인포스트" />
+        </div>
+        <div class="f">
+          <label>기사 일자</label>
+          <input id="c-adate" type="date" />
+        </div>
+
+        <div class="f full">
+          <div class="note" style="margin-top:0">
+            포스팅 1건이 기사 1건이므로 <b>출처와 기사 일자는 5장 전체에 동일하게</b> 들어갑니다.
+            여기서 한 번만 입력하면 됩니다.
+          </div>
         </div>
 
         <div class="f">
@@ -255,8 +286,9 @@
 
       </div>
       <div class="note">
-        제목·설명·출처를 클릭해 바로 고칩니다. 설명은 <b>두 줄이 상한</b>이라 넘치면 잘립니다.
-        <b>출처와 확인일이 비면 경고</b>가 표시됩니다. 작업 내용은 이 브라우저에 자동 저장됩니다.
+        카드의 제목과 설명을 클릭해 바로 고칩니다. <b>제목은 2줄, 세부 설명은 4줄이 상한</b>이며
+        넘치면 잘립니다. 제목이 길면 자동으로 작아집니다.
+        <b>출처나 기사 일자가 비면 경고</b>가 표시됩니다. 작업 내용은 이 브라우저에 자동 저장됩니다.
       </div>
     </div>
   </div>
@@ -292,10 +324,10 @@
   <div class="box">
     <h3>업로드 매체</h3>
     <table>
-      <tr><td>인스타 캐러셀</td><td>10장 그대로. 저녁 19~24시 업로드</td></tr>
-      <tr><td>인스타 스토리</td><td>2·4·9번(체류·세금·여권)만 D-3 리마인더로 재활용</td></tr>
-      <tr><td>블로그</td><td>각 카드의 절차 전문 — 서류 목록, 수수료, 관공서 위치</td></tr>
-      <tr><td>링크드인</td><td>4번(소득세)·5번(송금)만 기업·주재원 관점으로 재작성</td></tr>
+      <tr><td>인스타 캐러셀</td><td>5장 그대로. 저녁 19~24시 업로드</td></tr>
+      <tr><td>인스타 스토리</td><td>1번(표지)과 4번(준비 사항)만 리마인더로 재활용</td></tr>
+      <tr><td>블로그</td><td>기사 원문 정리 + 카드에 못 담은 서류·비용·접수처 전문</td></tr>
+      <tr><td>링크드인</td><td>기업·주재원에게 영향이 있는 기사만 월 1~2회 재작성</td></tr>
       <tr><td>카카오톡·밴드</td><td>최종 도착지. 캐러셀 링크를 단톡방에 직접</td></tr>
     </table>
   </div>
@@ -337,7 +369,7 @@ window.KIT_BACKGROUNDS = [
 
   /* 추천 배경 (위 인라인 데이터) + 카드별 기본 배분 */
   var BG = window.KIT_BACKGROUNDS || [];
-  var BG_MAP = { city:[1,10], docs:[2,3,4,9], rain:[5,6,7,8] };
+  var BG_MAP = { city:[1,5], docs:[2,3], rain:[4] };
   function bgData(id){
     for(var i=0;i<BG.length;i++) if(BG[i].id === id) return BG[i].data;
     return null;
@@ -364,38 +396,40 @@ window.KIT_BACKGROUNDS = [
     return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate());
   })();
 
+  /* 포스팅 1건 = 기사 1건 = 카드 5장 (표지 · 내용 3 · 마무리) */
   var COPY = [
-    { title:'이번 주 챙길 것 여덟 가지', desc:'날짜가 걸린 항목만 모았습니다. 해당되면 저장하세요.',                  source:'편집부' },
-    { title:'체류허가, 만료 두 달 전',   desc:'만료 60일 전에 시작하세요. 여권 잔여기간부터 확인합니다.',            source:'이민국(Imigrasi) 안내' },
-    { title:'학교 원서는 마감부터 역산', desc:'학교마다 접수 기간이 다릅니다. 마감일부터 역산해 준비하세요.',        source:'각 학교 공고' },
-    { title:'소득세 신고 기한 확인',     desc:'신고 기한은 매년 [3월 말]. NPWP 보유자는 대상 여부를 확인하세요.',   source:'국세청(DJP) 안내' },
-    { title:'송금은 수수료부터 비교',    desc:'환율보다 수수료 차이가 큽니다. 금액대별로 한 번만 비교해 두세요.',   source:'각 은행 고시' },
-    { title:'현지 면허 유효기간 확인',   desc:'만료 후 재발급은 갱신보다 번거롭습니다. 지금 확인하세요.',            source:'경찰청(Polri) 안내' },
-    { title:'우기 이동은 경로부터',      desc:'상습 침수 구간은 매년 비슷합니다. 대체 경로를 정해두세요.',           source:'현지 교통정보' },
-    { title:'응급 연락처 지금 저장',     desc:'보험사 24시간 번호와 인근 응급실을 연락처에 등록하세요.',             source:'가입 보험사 안내' },
-    { title:'여권은 만료 6개월 전',      desc:'잔여기간이 짧으면 항공권에서 막힙니다. 예약 가능일을 확인하세요.',    source:'주인도네시아 대한민국 대사관' },
-    { title:'필요한 분께 보내주세요',    desc:'해당 항목이 있으면 주변 교민에게 전달해 주세요. 최종 확인은 관할 기관.', source:'편집부' }
+    { title:'기사 핵심을 한 줄로',
+      desc:'이 포스팅에서 다루는 기사의 요점을 두세 문장으로 적습니다. 해당되는 분은 저장해 두시라는 안내까지 이 장에서 끝냅니다.' },
+    { title:'무엇이 바뀌나',
+      desc:'변경 전과 변경 후를 나란히 적습니다. 적용 시점이 언제부터인지, 유예 기간이 있는지까지 이 장에서 밝힙니다.' },
+    { title:'누가 해당되나',
+      desc:'적용 대상을 구체적으로 적습니다. 비자 종류, 거주 지역, 체류 기간처럼 독자가 자기 상황과 바로 맞춰볼 수 있는 기준으로 씁니다.' },
+    { title:'무엇을 준비하나',
+      desc:'필요한 서류와 절차를 순서대로 적습니다. 신청 기한과 접수처, 예상 비용까지 있으면 여기에 함께 넣습니다.' },
+    { title:'필요한 분께 보내주세요',
+      desc:'해당되는 분이 주변에 있으면 전달해 달라는 요청으로 닫습니다. 기사 원문 위치와 문의처를 함께 안내합니다.' }
   ];
 
-  var FOOT_NOTE = '최종 확인은 관할 기관';
-  var STORE = 'cardnews-kit-v2';
+  var STORE = 'cardnews-kit-v3';
 
   /* ── 상태 ───────────────────────────────── */
   var S = {
     topic:'인도네시아 교민 뉴스',
-    font:'kit', size:1080,
+    font:'kit', size:1350,
     titleScale:1, descScale:1,
     main:KIT.main, bg:KIT.bg, accent:KIT.accent,
     overlay:0.75, image:null,
     bgApplied:false,
+    source:'출처 기관·매체명',
+    articleDate:TODAY,
     cards:COPY.map(function(c){
-      return { title:c.title, desc:c.desc, source:c.source, checked:TODAY, image:null, bgRef:null };
+      return { title:c.title, desc:c.desc, image:null, bgRef:null };
     })
   };
 
   try{
     var saved = JSON.parse(localStorage.getItem(STORE));
-    if(saved && saved.cards && saved.cards.length === 10){
+    if(saved && saved.cards && saved.cards.length === COPY.length){
       for(var k in S) if(saved[k] !== undefined) S[k] = saved[k];
     }
   }catch(e){}
@@ -416,20 +450,50 @@ window.KIT_BACKGROUNDS = [
   function saveSoon(){ clearTimeout(saveTimer); saveTimer = setTimeout(save, 400); }
 
   /* ── 레이아웃 (규격에 따라 계산) ─────────── */
+  /* 제목은 최대 2줄, 세부 설명은 최대 4줄. 하단은 출처·기사 일자 2줄 블록 */
   function layout(){
-    var H = S.size, mid = Math.round(H * 0.45);
-    var dfs = Math.round(46 * S.descScale);
+    var H = S.size;
+    var dfs = Math.round(44 * S.descScale);
+    var tmax = Math.round(88 * S.titleScale);
+
+    var FOOT_FS = 34, FOOT_LH = 46;
+    var FOOT_TOP = H - 150;          // 출처·기사 일자 블록 시작
+    var DIV_Y    = FOOT_TOP - 46;    // 그 위 구분선
+    var TITLE_TOP = Math.round(H * 0.30);
+
     return {
       W:1080, H:H, PAD:90, CW:900, BAR:12,
       EYE_C:150, EYE_FS:38, EYE_LH:52,
-      TITLE_C:mid,
-      TITLE_MAX:Math.round(92 * S.titleScale),
-      TITLE_MIN:Math.round(50 * S.titleScale),
-      TITLE_LHR:1.25,
-      RULE_Y:mid + 100, RULE_W:110, RULE_H:8,
-      DESC_TOP:mid + 150, DESC_FS:dfs, DESC_LH:Math.round(dfs * 1.6), DESC_LINES:2,
-      DIV_Y:H - 130,
-      FOOT_C:H - 70, FOOT_FS:34, FOOT_LH:48
+      TITLE_TOP:TITLE_TOP,
+      TITLE_MAX:tmax,
+      TITLE_MIN:Math.round(48 * S.titleScale),
+      TITLE_LHR:1.22, TITLE_LINES:2,
+      RULE_GAP:44, RULE_W:110, RULE_H:8,
+      DESC_GAP:44, DESC_FS:dfs, DESC_LH:Math.round(dfs * 1.62), DESC_LINES:4,
+      DIV_Y:DIV_Y,
+      FOOT_TOP:FOOT_TOP, FOOT_FS:FOOT_FS, FOOT_LH:FOOT_LH,
+      NUM_FS:40
+    };
+  }
+
+  /* 제목 블록 높이가 가변이므로 룰·설명 위치를 제목 줄 수에서 계산한다.
+     설명 줄 수는 하단 표기와 겹치지 않도록 남은 공간에서 산출한다. */
+  function metrics(card, L, F){
+    var tfs   = fitTitle(card.title, L, F);
+    var tlh   = Math.round(tfs * L.TITLE_LHR);
+    var tline = wrapLines(card.title, tfs, F.tw, F.tf, L.CW, L.TITLE_LINES);
+    var tH    = tlh * tline.length;
+    var ruleY = L.TITLE_TOP + tH + L.RULE_GAP;
+    var dTop  = ruleY + L.RULE_H + L.DESC_GAP;
+
+    var room  = L.DIV_Y - 28 - dTop;                  // 구분선까지 남은 높이
+    var lines = Math.floor(room / L.DESC_LH);
+    if(lines < 1) lines = 1;
+    if(lines > L.DESC_LINES) lines = L.DESC_LINES;
+
+    return {
+      tfs:tfs, tlh:tlh, tlines:tline, tH:tH,
+      ruleY:ruleY, descTop:dTop, descLines:lines
     };
   }
 
@@ -439,12 +503,16 @@ window.KIT_BACKGROUNDS = [
     mCtx.font = weight + ' ' + fs + 'px ' + fam;
     return mCtx.measureText(text).width;
   }
+  /* 제목이 지정된 줄 수(기본 2줄) 안에 들어갈 때까지 크기를 줄인다 */
   function fitTitle(text, L, F){
     var fs = L.TITLE_MAX;
-    while(fs > L.TITLE_MIN && measure(text || ' ', fs, F.tw, F.tf) > L.CW) fs -= 1;
+    while(fs > L.TITLE_MIN){
+      if(wrapAll(text, fs, F.tw, F.tf, L.CW).length <= L.TITLE_LINES) return fs;
+      fs -= 2;
+    }
     return fs;
   }
-  function wrapLines(text, fs, weight, fam, maxW, maxLines){
+  function wrapAll(text, fs, weight, fam, maxW){
     text = (text || '').replace(/\s+/g, ' ').trim();
     if(!text) return [''];
     var words = text.split(' '), lines = [], cur = '';
@@ -461,6 +529,10 @@ window.KIT_BACKGROUNDS = [
       cur = chunk;
     }
     if(cur) lines.push(cur);
+    return lines;
+  }
+  function wrapLines(text, fs, weight, fam, maxW, maxLines){
+    var lines = wrapAll(text, fs, weight, fam, maxW);
     if(lines.length > maxLines){
       lines = lines.slice(0, maxLines);
       var last = lines[maxLines - 1];
@@ -476,11 +548,19 @@ window.KIT_BACKGROUNDS = [
     var n = parseInt(h, 16);
     return 'rgba(' + ((n>>16)&255) + ',' + ((n>>8)&255) + ',' + (n&255) + ',' + a + ')';
   }
-  function num(i){ return (i+1 < 10 ? '0' : '') + (i+1) + ' / ' + S.cards.length; }
-  function footLeft(c){
-    var src = (c.source || '').trim(), dt = (c.checked || '').trim();
-    if(!src && !dt) return '';
-    return (src || '출처 미입력') + ' · 확인 ' + (dt || '날짜 미입력') + ' · ' + FOOT_NOTE;
+  function num(i){ return (i+1) + ' / ' + S.cards.length; }
+
+  /* 하단 고정 표기 — 포스팅 1건이 기사 1건이므로 전체 카드가 같은 값을 쓴다 */
+  function srcText(){
+    var s = (S.source || '').trim();
+    return '출처 · ' + (s || '출처 미입력');
+  }
+  function dateText(){
+    var d = (S.articleDate || '').trim();
+    return '기사 일자 · ' + (d ? d.replace(/-/g, '. ') : '일자 미입력');
+  }
+  function footMissing(){
+    return !(S.source || '').trim() || !(S.articleDate || '').trim();
   }
 
   /* ── DOM 렌더 ───────────────────────────── */
@@ -493,17 +573,18 @@ window.KIT_BACKGROUNDS = [
     document.documentElement.style.setProperty('--accent', S.accent);
 
     list.innerHTML = '';
+    var missing = footMissing();
+
     S.cards.forEach(function(c, i){
-      var fs = fitTitle(c.title, L, F), lh = Math.round(fs * L.TITLE_LHR);
+      var M = metrics(c, L, F);
       var img = c.image || bgData(c.bgRef) || S.image;
-      var missing = !(c.source || '').trim() || !(c.checked || '').trim();
 
       var item = document.createElement('div');
       item.className = 'item';
       item.innerHTML =
         '<div class="item-top">' +
           '<span class="item-no">CARD ' + num(i) + '</span>' +
-          (missing ? '<span class="warn">⚠ 출처·확인일 미입력</span>' : '') +
+          (missing ? '<span class="warn">⚠ 출처·기사 일자 미입력</span>' : '') +
           '<button class="sm" data-cimg="' + i + '">배경</button>' +
           '<button class="sm" data-cimgx="' + i + '">배경 해제</button>' +
           '<button class="sm" data-save="' + i + '">PNG 저장</button>' +
@@ -527,33 +608,38 @@ window.KIT_BACKGROUNDS = [
           '<s style="background:' + S.accent + '"></s><span data-eye></span></div>' +
 
         '<div class="title" data-title contenteditable="true" spellcheck="false" ' +
-          'style="left:' + L.PAD + 'px;width:' + L.CW + 'px;top:' + (L.TITLE_C - lh/2) + 'px;' +
-          'height:' + lh + 'px;font-size:' + fs + 'px;line-height:' + lh + 'px;' +
+          'style="left:' + L.PAD + 'px;width:' + L.CW + 'px;top:' + L.TITLE_TOP + 'px;' +
+          'font-size:' + M.tfs + 'px;line-height:' + M.tlh + 'px;' +
+          'max-height:' + (M.tlh * L.TITLE_LINES) + 'px;-webkit-line-clamp:' + L.TITLE_LINES + ';' +
           'font-family:' + F.tf + ';font-weight:' + F.tw + ';"></div>' +
 
-        '<div class="rule" style="left:' + L.PAD + 'px;top:' + L.RULE_Y + 'px;' +
+        '<div class="rule" data-rule style="left:' + L.PAD + 'px;top:' + M.ruleY + 'px;' +
           'width:' + L.RULE_W + 'px;height:' + L.RULE_H + 'px;background:' + S.accent + '"></div>' +
 
         '<div class="desc" data-desc contenteditable="true" spellcheck="false" ' +
-          'style="left:' + L.PAD + 'px;width:' + L.CW + 'px;top:' + L.DESC_TOP + 'px;' +
+          'style="left:' + L.PAD + 'px;width:' + L.CW + 'px;top:' + M.descTop + 'px;' +
           'font-size:' + L.DESC_FS + 'px;line-height:' + L.DESC_LH + 'px;' +
-          'max-height:' + (L.DESC_LH * L.DESC_LINES) + 'px;-webkit-line-clamp:' + L.DESC_LINES + ';' +
+          'max-height:' + (L.DESC_LH * M.descLines) + 'px;-webkit-line-clamp:' + M.descLines + ';' +
           'color:' + KIT.text + ';font-family:' + F.df + ';font-weight:' + F.dw + ';"></div>' +
 
         '<div class="divl" style="left:' + L.PAD + 'px;width:' + L.CW + 'px;top:' + L.DIV_Y + 'px;' +
-          'background:' + rgba(KIT.text, .18) + '"></div>' +
+          'background:' + rgba(S.accent, .55) + '"></div>' +
 
-        '<div class="foot" style="left:' + L.PAD + 'px;width:' + L.CW + 'px;' +
-          'top:' + (L.FOOT_C - L.FOOT_LH/2) + 'px;height:' + L.FOOT_LH + 'px;' +
-          'font-size:' + L.FOOT_FS + 'px;line-height:' + L.FOOT_LH + 'px;font-family:' + F.df + ';">' +
-          '<span class="src' + (missing ? ' empty' : '') + '" data-src contenteditable="true" spellcheck="false" ' +
-            'style="color:' + rgba(KIT.text, .62) + '"></span>' +
-          '<span class="num" style="color:' + S.accent + '">' + num(i) + '</span></div>';
+        '<div class="foot2" style="left:' + L.PAD + 'px;width:' + L.CW + 'px;top:' + L.FOOT_TOP + 'px;' +
+          'font-family:' + F.df + ';">' +
+          '<div class="fmeta" style="font-size:' + L.FOOT_FS + 'px;line-height:' + L.FOOT_LH + 'px;">' +
+            '<div class="fsrc' + (missing ? ' empty' : '') + '" style="color:' + KIT.text + '"></div>' +
+            '<div class="fdate' + (missing ? ' empty' : '') + '" style="color:' + S.accent + '"></div>' +
+          '</div>' +
+          '<div class="fnum" style="font-size:' + L.NUM_FS + 'px;line-height:' + (L.FOOT_LH * 2) + 'px;' +
+            'color:' + rgba(KIT.text, .55) + '">' + num(i) + '</div>' +
+        '</div>';
 
       card.querySelector('[data-eye]').textContent = S.topic;
       card.querySelector('[data-title]').textContent = c.title;
       card.querySelector('[data-desc]').textContent = c.desc;
-      card.querySelector('[data-src]').textContent = footLeft(c) || '출처 · 확인일 입력';
+      card.querySelector('.fsrc').textContent  = srcText();
+      card.querySelector('.fdate').textContent = dateText();
 
       bind(card, i, L, F);
       fitStage(item.querySelector('.stage'), L);
@@ -563,15 +649,19 @@ window.KIT_BACKGROUNDS = [
   function bind(card, i, L, F){
     var t = card.querySelector('[data-title]');
     var d = card.querySelector('[data-desc]');
-    var s = card.querySelector('[data-src]');
+    var rule = card.querySelector('[data-rule]');
 
+    /* 제목 줄 수가 바뀌면 룰과 설명 위치를 다시 잡는다 */
     t.addEventListener('input', function(){
       S.cards[i].title = this.textContent.replace(/\s+/g,' ');
-      var fs = fitTitle(S.cards[i].title, L, F), lh = Math.round(fs * L.TITLE_LHR);
-      this.style.fontSize = fs + 'px';
-      this.style.lineHeight = lh + 'px';
-      this.style.height = lh + 'px';
-      this.style.top = (L.TITLE_C - lh/2) + 'px';
+      var M = metrics(S.cards[i], L, F);
+      this.style.fontSize = M.tfs + 'px';
+      this.style.lineHeight = M.tlh + 'px';
+      this.style.maxHeight = (M.tlh * L.TITLE_LINES) + 'px';
+      rule.style.top = M.ruleY + 'px';
+      d.style.top = M.descTop + 'px';
+      d.style.maxHeight = (L.DESC_LH * M.descLines) + 'px';
+      d.style.webkitLineClamp = M.descLines;
       saveSoon();
     });
     t.addEventListener('keydown', function(e){
@@ -581,19 +671,8 @@ window.KIT_BACKGROUNDS = [
       S.cards[i].desc = this.textContent.replace(/\s+/g,' ');
       saveSoon();
     });
-    s.addEventListener('focus', function(){
-      if(!(S.cards[i].source||'').trim() && !(S.cards[i].checked||'').trim()) this.textContent = '';
-    });
-    s.addEventListener('blur', function(){
-      // "출처 · 확인 날짜 · 최종 확인은 관할 기관" 형태를 되돌려 파싱
-      var parts = this.textContent.split('·').map(function(x){ return x.trim(); });
-      S.cards[i].source = parts[0] || '';
-      S.cards[i].checked = (parts[1] || '').replace(/^확인\s*/,'');
-      save();
-      render();
-    });
 
-    [t, d, s].forEach(function(el){
+    [t, d].forEach(function(el){
       el.addEventListener('paste', function(e){
         e.preventDefault();
         var txt = (e.clipboardData || window.clipboardData).getData('text').replace(/\s+/g,' ');
@@ -674,41 +753,52 @@ window.KIT_BACKGROUNDS = [
         var ex = L.PAD + 34;
         g.fillText(wrapLines(S.topic, L.EYE_FS, 800, F.df, L.W - ex - L.PAD, 1)[0], ex, L.EYE_C);
 
-        // 제목
-        var tfs = fitTitle(c.title, L, F);
+        var M = metrics(c, L, F);
+
+        // 큰 제목 (최대 2줄)
         g.fillStyle = '#FFFFFF';
-        g.font = F.tw + ' ' + tfs + 'px ' + F.tf;
-        g.fillText(c.title || '', L.PAD, L.TITLE_C);
+        g.font = F.tw + ' ' + M.tfs + 'px ' + F.tf;
+        M.tlines.forEach(function(ln, k){
+          g.fillText(ln, L.PAD, L.TITLE_TOP + M.tlh * k + M.tlh / 2);
+        });
 
         // 강조 룰
         g.fillStyle = S.accent;
-        g.fillRect(L.PAD, L.RULE_Y, L.RULE_W, L.RULE_H);
+        g.fillRect(L.PAD, M.ruleY, L.RULE_W, L.RULE_H);
 
-        // 설명 (두 줄)
+        // 세부 설명 (최대 4줄)
         g.fillStyle = KIT.text;
         g.font = F.dw + ' ' + L.DESC_FS + 'px ' + F.df;
-        wrapLines(c.desc, L.DESC_FS, F.dw, F.df, L.CW, L.DESC_LINES).forEach(function(ln, k){
-          g.fillText(ln, L.PAD, L.DESC_TOP + L.DESC_LH * k + L.DESC_LH/2);
+        wrapLines(c.desc, L.DESC_FS, F.dw, F.df, L.CW, M.descLines).forEach(function(ln, k){
+          g.fillText(ln, L.PAD, M.descTop + L.DESC_LH * k + L.DESC_LH / 2);
         });
 
-        // 구분선 + 푸터
-        g.fillStyle = rgba(KIT.text, .18);
-        g.fillRect(L.PAD, L.DIV_Y, L.CW, 2);
+        // 구분선
+        g.fillStyle = rgba(S.accent, .55);
+        g.fillRect(L.PAD, L.DIV_Y, L.CW, 3);
 
-        g.font = '700 ' + L.FOOT_FS + 'px ' + F.df;
-        g.fillStyle = rgba(KIT.text, .62);
+        // 하단: 출처 · 기사 일자 (2줄) + 장수
         var nText = num(i);
-        g.font = '800 ' + L.FOOT_FS + 'px ' + F.df;
+        g.font = '800 ' + L.NUM_FS + 'px ' + F.df;
         var nW = g.measureText(nText).width;
-        g.font = '700 ' + L.FOOT_FS + 'px ' + F.df;
-        g.fillText(
-          wrapLines(footLeft(c), L.FOOT_FS, 700, F.df, L.CW - nW - 30, 1)[0],
-          L.PAD, L.FOOT_C
-        );
+        var metaW = L.CW - nW - 40;
+
         g.font = '800 ' + L.FOOT_FS + 'px ' + F.df;
+        g.fillStyle = KIT.text;
+        g.fillText(
+          wrapLines(srcText(), L.FOOT_FS, 800, F.df, metaW, 1)[0],
+          L.PAD, L.FOOT_TOP + L.FOOT_LH / 2
+        );
         g.fillStyle = S.accent;
+        g.fillText(
+          wrapLines(dateText(), L.FOOT_FS, 800, F.df, metaW, 1)[0],
+          L.PAD, L.FOOT_TOP + L.FOOT_LH + L.FOOT_LH / 2
+        );
+
+        g.font = '800 ' + L.NUM_FS + 'px ' + F.df;
+        g.fillStyle = rgba(KIT.text, .55);
         g.textAlign = 'right';
-        g.fillText(nText, L.W - L.PAD, L.FOOT_C);
+        g.fillText(nText, L.W - L.PAD, L.FOOT_TOP + L.FOOT_LH);
 
         return cv;
       });
@@ -740,6 +830,8 @@ window.KIT_BACKGROUNDS = [
 
   function syncPanel(){
     $('c-topic').value = S.topic;
+    $('c-source').value = S.source || '';
+    $('c-adate').value = /^\d{4}-\d{2}-\d{2}$/.test(S.articleDate || '') ? S.articleDate : '';
     fsel.value = S.font;
     $('c-size').value = String(S.size);
     $('c-title').value = S.titleScale;
@@ -762,6 +854,23 @@ window.KIT_BACKGROUNDS = [
     });
     saveSoon();
   });
+  on('c-source','input', function(){
+    S.source = this.value;
+    Array.prototype.forEach.call(document.querySelectorAll('.fsrc'), function(el){
+      el.textContent = srcText();
+      el.className = 'fsrc' + (footMissing() ? ' empty' : '');
+    });
+    saveSoon();
+  });
+  on('c-adate','change', function(){
+    S.articleDate = this.value;
+    Array.prototype.forEach.call(document.querySelectorAll('.fdate'), function(el){
+      el.textContent = dateText();
+      el.className = 'fdate' + (footMissing() ? ' empty' : '');
+    });
+    save(); render();
+  });
+
   on('c-font','change', function(){ S.font = this.value; save(); render(); });
   on('c-size','change', function(){ S.size = parseInt(this.value,10); save(); render(); });
   ['c-title','c-desc','c-ovl'].forEach(function(id){
@@ -925,9 +1034,14 @@ window.KIT_BACKGROUNDS = [
   }
 
   function copyJson(){
-    return S.cards.map(function(c, i){
-      return { no:i+1, title:c.title, desc:c.desc, source:c.source, checked:c.checked };
-    });
+    return {
+      topic: S.topic,
+      source: S.source,
+      articleDate: S.articleDate,
+      cards: S.cards.map(function(c, i){
+        return { no:i+1, title:c.title, desc:c.desc };
+      })
+    };
   }
 
   on('b-json','click', function(){
@@ -952,13 +1066,19 @@ window.KIT_BACKGROUNDS = [
       log.innerHTML = '<b style="color:var(--warn)">JSON 형식이 아닙니다.</b> ' + e.message;
       return;
     }
-    if(!Array.isArray(data)){
-      log.innerHTML = '<b style="color:var(--warn)">배열이어야 합니다.</b> 최상위가 [ ] 로 시작해야 합니다.';
+
+    // 배열만 넣어도 되고, {topic, source, articleDate, cards:[...]} 형태도 받는다
+    var arr = null, meta = null;
+    if(Array.isArray(data)) arr = data;
+    else if(data && Array.isArray(data.cards)){ arr = data.cards; meta = data; }
+
+    if(!arr){
+      log.innerHTML = '<b style="color:var(--warn)">배열 또는 cards 배열이 필요합니다.</b>';
       return;
     }
 
     var used = 0, skipped = 0;
-    data.forEach(function(item, i){
+    arr.forEach(function(item, i){
       if(i >= S.cards.length){ skipped++; return; }
       if(!item || typeof item !== 'object'){ skipped++; return; }
       var t = typeof item.title === 'string' ? item.title.replace(/\s+/g,' ').trim() : '';
@@ -966,15 +1086,20 @@ window.KIT_BACKGROUNDS = [
       if(!t && !d){ skipped++; return; }
       if(t) S.cards[i].title = t;
       if(d) S.cards[i].desc = d;
-      if(typeof item.source  === 'string') S.cards[i].source  = item.source.trim();
-      if(typeof item.checked === 'string') S.cards[i].checked = item.checked.trim();
       used++;
     });
 
-    save(); render(); genCaption();
+    if(meta){
+      if(typeof meta.topic       === 'string') S.topic       = meta.topic;
+      if(typeof meta.source      === 'string') S.source      = meta.source;
+      if(typeof meta.articleDate === 'string') S.articleDate = meta.articleDate;
+    }
+
+    syncPanel(); save(); render(); genCaption();
     log.innerHTML = '<b>' + used + '장</b>에 적용했습니다.' +
-      (skipped ? ' 건너뜀 ' + skipped + '건 (title·desc가 없거나 10장을 넘김).' : '') +
-      ' 설명이 두 줄을 넘으면 카드에서 잘립니다.';
+      (meta ? ' 출처·기사 일자도 함께 반영했습니다.' : '') +
+      (skipped ? ' 건너뜀 ' + skipped + '건 (title·desc가 없거나 5장을 넘김).' : '') +
+      ' 제목은 2줄, 설명은 4줄을 넘으면 잘립니다.';
   });
 
   /* ── 회차 저장 / 불러오기 ───────────────── */
@@ -1018,8 +1143,10 @@ window.KIT_BACKGROUNDS = [
     all[name] = {
       savedAt: new Date().toISOString(),
       topic: S.topic,
+      source: S.source,
+      articleDate: S.articleDate,
       cards: S.cards.map(function(c){
-        return { title:c.title, desc:c.desc, source:c.source, checked:c.checked, bgRef:c.bgRef || null };
+        return { title:c.title, desc:c.desc, bgRef:c.bgRef || null };
       })
     };
     var ok = issuesWrite(all);
@@ -1037,15 +1164,15 @@ window.KIT_BACKGROUNDS = [
     var it = issuesRead()[name];
     if(!it){ $('issue-log').innerHTML = '<b style="color:var(--warn)">회차를 찾을 수 없습니다.</b>'; return; }
 
-    if(typeof it.topic === 'string') S.topic = it.topic;
+    if(typeof it.topic       === 'string') S.topic       = it.topic;
+    if(typeof it.source      === 'string') S.source      = it.source;
+    if(typeof it.articleDate === 'string') S.articleDate = it.articleDate;
     (it.cards || []).forEach(function(c, i){
       if(i >= S.cards.length || !c) return;
-      S.cards[i].title   = c.title   || '';
-      S.cards[i].desc    = c.desc    || '';
-      S.cards[i].source  = c.source  || '';
-      S.cards[i].checked = c.checked || '';
-      S.cards[i].bgRef   = c.bgRef   || null;
-      S.cards[i].image   = null;
+      S.cards[i].title = c.title || '';
+      S.cards[i].desc  = c.desc  || '';
+      S.cards[i].bgRef = c.bgRef || null;
+      S.cards[i].image = null;
     });
     S.bgApplied = true;
     syncPanel(); save(); render(); genCaption();
@@ -1064,21 +1191,13 @@ window.KIT_BACKGROUNDS = [
 
   /* ── 인스타 캡션 초안 ───────────────────── */
   function genCaption(){
-    var body = S.cards.slice(1, S.cards.length - 1);
     var cover = S.cards[0], last = S.cards[S.cards.length - 1];
-
-    var dates = S.cards.map(function(c){ return (c.checked || '').trim(); })
-                       .filter(Boolean).sort();
-    var lastDate = dates.length ? dates[dates.length - 1] : '';
-
-    var sources = [];
-    S.cards.forEach(function(c){
-      var s = (c.source || '').trim();
-      if(s && s !== '편집부' && sources.indexOf(s) === -1) sources.push(s);
-    });
+    var body  = S.cards.slice(1, S.cards.length - 1);
+    var src   = (S.source || '').trim();
+    var date  = (S.articleDate || '').trim().replace(/-/g, '. ');
 
     var lines = [];
-    lines.push(S.topic + (lastDate ? ' · 확인 ' + lastDate : ''));
+    lines.push(cover.title || S.topic);
     lines.push('');
     if(cover.desc) lines.push(cover.desc);
     lines.push('');
@@ -1088,8 +1207,8 @@ window.KIT_BACKGROUNDS = [
     lines.push('');
     if(last.desc) lines.push(last.desc);
     lines.push('');
-    if(sources.length) lines.push('출처: ' + sources.join(' / '));
-    lines.push('최종 확인은 각 관할 기관입니다.');
+    if(src)  lines.push('출처 · ' + src);
+    if(date) lines.push('기사 일자 · ' + date);
     lines.push('');
     lines.push(TAGS5.join(' '));
 
