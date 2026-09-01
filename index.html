@@ -62,6 +62,13 @@
   .f{display:flex;flex-direction:column;gap:6px;min-width:0;}
   .f.full{grid-column:1 / -1;}
   label{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--text);opacity:.6;}
+  textarea{
+    width:100%;background:var(--main);border:1px solid var(--line);border-radius:9px;
+    color:var(--text);font:inherit;font-size:13px;font-weight:500;padding:11px 12px;
+    resize:vertical;line-height:1.5;
+    font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  }
+  textarea:focus{outline:2px solid var(--accent);}
   input[type=text],select{
     background:var(--main);border:1px solid var(--line);border-radius:9px;
     color:var(--text);font:inherit;font-size:15px;font-weight:600;
@@ -213,9 +220,36 @@
         </div>
 
         <div class="f full">
+          <label>회차 <span class="val" id="v-issues"></span></label>
+          <div class="btns">
+            <input id="c-issue" type="text" placeholder="회차 이름 (예: 2026-W35)" style="flex:1;min-width:140px" />
+            <button class="gold sm" id="b-isave">저장</button>
+          </div>
+          <div class="btns" style="margin-top:6px">
+            <select id="c-issues" style="flex:1;min-width:140px"><option value="">저장된 회차 없음</option></select>
+            <button class="sm" id="b-iload">불러오기</button>
+            <button class="sm" id="b-idel">삭제</button>
+          </div>
+          <div class="note" id="issue-log">
+            문구·출처·확인일·배경 배분을 회차로 저장합니다. 다음 주에는 지난 회차를 불러와 날짜만 고치면 됩니다.
+          </div>
+        </div>
+
+        <div class="f full">
           <div class="btns">
             <button class="gold" id="b-all">전체 PNG 저장</button>
             <button id="b-json">문구 JSON 복사</button>
+            <button id="b-paste">JSON 붙여넣기</button>
+          </div>
+          <div id="paste-wrap" class="hidden" style="margin-top:8px">
+            <textarea id="c-paste" rows="6" placeholder='[{"title":"제목","desc":"설명","source":"출처","checked":"2026-08-27"}, ...]'></textarea>
+            <div class="btns" style="margin-top:6px">
+              <button class="gold sm" id="b-papply">10장에 적용</button>
+              <button class="sm" id="b-pclose">닫기</button>
+            </div>
+            <div class="note" id="paste-log">
+              <b>title·desc</b>는 필수, <b>source·checked</b>는 있으면 함께 채웁니다. 배열 순서대로 카드 1번부터 들어갑니다.
+            </div>
           </div>
         </div>
 
@@ -230,6 +264,19 @@
 
 <main class="wrap">
   <div id="list"></div>
+
+  <div class="box">
+    <h3>인스타 캡션 초안</h3>
+    <div class="note" style="margin-top:0">
+      카드 문구에서 자동으로 만듭니다. 키트 톤앤매너대로 <b>이모지와 감성 카피를 넣지 않습니다.</b>
+      카드를 고친 뒤 <b>다시 만들기</b>를 누르세요.
+    </div>
+    <textarea id="c-caption" rows="14"></textarea>
+    <div class="btns" style="margin-top:8px">
+      <button class="gold sm" id="b-cgen">다시 만들기</button>
+      <button class="sm" id="b-ccopy">캡션 복사</button>
+    </div>
+  </div>
 
   <div class="box">
     <h3>추천 해시태그</h3>
@@ -877,12 +924,185 @@ window.KIT_BACKGROUNDS = [
     }
   }
 
-  on('b-json','click', function(){
-    var out = S.cards.map(function(c, i){
+  function copyJson(){
+    return S.cards.map(function(c, i){
       return { no:i+1, title:c.title, desc:c.desc, source:c.source, checked:c.checked };
     });
-    copy(JSON.stringify(out, null, 2), this);
+  }
+
+  on('b-json','click', function(){
+    copy(JSON.stringify(copyJson(), null, 2), this);
   });
+
+  /* ── JSON 붙여넣기 ──────────────────────── */
+  on('b-paste','click', function(){
+    var w = $('paste-wrap');
+    w.classList.toggle('hidden');
+    if(!w.classList.contains('hidden')) $('c-paste').focus();
+  });
+  on('b-pclose','click', function(){ $('paste-wrap').classList.add('hidden'); });
+
+  on('b-papply','click', function(){
+    var log = $('paste-log'), raw = $('c-paste').value.trim();
+    if(!raw){ log.innerHTML = '<b style="color:var(--warn)">붙여넣은 내용이 없습니다.</b>'; return; }
+
+    var data;
+    try{ data = JSON.parse(raw); }
+    catch(e){
+      log.innerHTML = '<b style="color:var(--warn)">JSON 형식이 아닙니다.</b> ' + e.message;
+      return;
+    }
+    if(!Array.isArray(data)){
+      log.innerHTML = '<b style="color:var(--warn)">배열이어야 합니다.</b> 최상위가 [ ] 로 시작해야 합니다.';
+      return;
+    }
+
+    var used = 0, skipped = 0;
+    data.forEach(function(item, i){
+      if(i >= S.cards.length){ skipped++; return; }
+      if(!item || typeof item !== 'object'){ skipped++; return; }
+      var t = typeof item.title === 'string' ? item.title.replace(/\s+/g,' ').trim() : '';
+      var d = typeof item.desc  === 'string' ? item.desc.replace(/\s+/g,' ').trim()  : '';
+      if(!t && !d){ skipped++; return; }
+      if(t) S.cards[i].title = t;
+      if(d) S.cards[i].desc = d;
+      if(typeof item.source  === 'string') S.cards[i].source  = item.source.trim();
+      if(typeof item.checked === 'string') S.cards[i].checked = item.checked.trim();
+      used++;
+    });
+
+    save(); render(); genCaption();
+    log.innerHTML = '<b>' + used + '장</b>에 적용했습니다.' +
+      (skipped ? ' 건너뜀 ' + skipped + '건 (title·desc가 없거나 10장을 넘김).' : '') +
+      ' 설명이 두 줄을 넘으면 카드에서 잘립니다.';
+  });
+
+  /* ── 회차 저장 / 불러오기 ───────────────── */
+  var ISTORE = 'cardnews-issues-v1';
+
+  function issuesRead(){
+    try{ return JSON.parse(localStorage.getItem(ISTORE)) || {}; }
+    catch(e){ return {}; }
+  }
+  function issuesWrite(obj){
+    try{ localStorage.setItem(ISTORE, JSON.stringify(obj)); return true; }
+    catch(e){ return false; }
+  }
+  function issueNameDefault(){
+    var d = new Date();
+    var t = new Date(d.getFullYear(), 0, 1);
+    var week = Math.ceil((((d - t) / 86400000) + t.getDay() + 1) / 7);
+    return d.getFullYear() + '-W' + (week < 10 ? '0' : '') + week;
+  }
+  function syncIssues(){
+    var all = issuesRead(), names = Object.keys(all).sort().reverse();
+    var sel = $('c-issues');
+    sel.innerHTML = '';
+    if(!names.length){
+      sel.innerHTML = '<option value="">저장된 회차 없음</option>';
+    } else {
+      names.forEach(function(n){
+        var o = document.createElement('option');
+        o.value = n;
+        o.textContent = n + ' (' + (all[n].savedAt || '').slice(0,10) + ')';
+        sel.appendChild(o);
+      });
+    }
+    $('v-issues').textContent = names.length ? names.length + '개 저장됨' : '';
+  }
+
+  on('b-isave','click', function(){
+    var name = $('c-issue').value.trim() || issueNameDefault();
+    var all = issuesRead();
+    var overwrite = !!all[name];
+    all[name] = {
+      savedAt: new Date().toISOString(),
+      topic: S.topic,
+      cards: S.cards.map(function(c){
+        return { title:c.title, desc:c.desc, source:c.source, checked:c.checked, bgRef:c.bgRef || null };
+      })
+    };
+    var ok = issuesWrite(all);
+    syncIssues();
+    $('c-issue').value = '';
+    $('issue-log').innerHTML = ok
+      ? '<b>' + name + '</b> 회차를 ' + (overwrite ? '덮어썼습니다.' : '저장했습니다.') +
+        ' 배경 이미지 파일이 아니라 <b>배분 정보만</b> 저장됩니다.'
+      : '<b style="color:var(--warn)">저장 실패</b> — 브라우저 저장 공간이 가득 찼습니다. 오래된 회차를 삭제하세요.';
+  });
+
+  on('b-iload','click', function(){
+    var name = $('c-issues').value;
+    if(!name){ $('issue-log').innerHTML = '<b style="color:var(--warn)">불러올 회차가 없습니다.</b>'; return; }
+    var it = issuesRead()[name];
+    if(!it){ $('issue-log').innerHTML = '<b style="color:var(--warn)">회차를 찾을 수 없습니다.</b>'; return; }
+
+    if(typeof it.topic === 'string') S.topic = it.topic;
+    (it.cards || []).forEach(function(c, i){
+      if(i >= S.cards.length || !c) return;
+      S.cards[i].title   = c.title   || '';
+      S.cards[i].desc    = c.desc    || '';
+      S.cards[i].source  = c.source  || '';
+      S.cards[i].checked = c.checked || '';
+      S.cards[i].bgRef   = c.bgRef   || null;
+      S.cards[i].image   = null;
+    });
+    S.bgApplied = true;
+    syncPanel(); save(); render(); genCaption();
+    $('issue-log').innerHTML = '<b>' + name + '</b> 회차를 불러왔습니다. 날짜와 숫자만 고쳐 발행하세요.';
+  });
+
+  on('b-idel','click', function(){
+    var name = $('c-issues').value;
+    if(!name) return;
+    var all = issuesRead();
+    delete all[name];
+    issuesWrite(all);
+    syncIssues();
+    $('issue-log').innerHTML = '<b>' + name + '</b> 회차를 삭제했습니다.';
+  });
+
+  /* ── 인스타 캡션 초안 ───────────────────── */
+  function genCaption(){
+    var body = S.cards.slice(1, S.cards.length - 1);
+    var cover = S.cards[0], last = S.cards[S.cards.length - 1];
+
+    var dates = S.cards.map(function(c){ return (c.checked || '').trim(); })
+                       .filter(Boolean).sort();
+    var lastDate = dates.length ? dates[dates.length - 1] : '';
+
+    var sources = [];
+    S.cards.forEach(function(c){
+      var s = (c.source || '').trim();
+      if(s && s !== '편집부' && sources.indexOf(s) === -1) sources.push(s);
+    });
+
+    var lines = [];
+    lines.push(S.topic + (lastDate ? ' · 확인 ' + lastDate : ''));
+    lines.push('');
+    if(cover.desc) lines.push(cover.desc);
+    lines.push('');
+    body.forEach(function(c, i){
+      lines.push((i + 1) + '. ' + (c.title || '') + (c.desc ? ' — ' + c.desc : ''));
+    });
+    lines.push('');
+    if(last.desc) lines.push(last.desc);
+    lines.push('');
+    if(sources.length) lines.push('출처: ' + sources.join(' / '));
+    lines.push('최종 확인은 각 관할 기관입니다.');
+    lines.push('');
+    lines.push(TAGS5.join(' '));
+
+    $('c-caption').value = lines.join('\n');
+  }
+
+  on('b-cgen','click', function(){
+    genCaption();
+    var b = this, old = b.textContent;
+    b.textContent = '만들었습니다';
+    setTimeout(function(){ b.textContent = old; }, 1200);
+  });
+  on('b-ccopy','click', function(){ copy($('c-caption').value, this); });
 
   $('tag5').textContent  = TAGS5.join(' ');
   $('tag10').textContent = TAGS10.join(' ');
@@ -898,9 +1118,11 @@ window.KIT_BACKGROUNDS = [
   window.addEventListener('resize', fitAll);
 
   syncPanel();
+  syncIssues();
   buildThumbs();
   if(BG.length && !S.bgApplied) applyKitBg();
   else render();
+  genCaption();
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(render);
 })();
 </script>
