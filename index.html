@@ -883,10 +883,23 @@ window.KIT_BACKGROUNDS = [
     el.className = 'barstat' + (bad ? ' bad' : '');
   }
 
+  /* 카드 한 장이 스크롤 없이 화면에 들어오도록 폭과 높이 둘 다에 맞춘다 */
   function fitStage(stage, L){
-    var sc = stage.clientWidth / L.W;
+    stage.style.width = '';                       // 먼저 원래 칸 폭을 잰다
+    var colW = stage.clientWidth;
+    if(colW <= 0) return;
+
+    var head = document.querySelector('header');
+    var bar  = document.querySelector('.actionbar');
+    var used = (head ? head.offsetHeight : 0) + (bar ? bar.offsetHeight : 0) + 56;
+    var availH = (window.innerHeight || 0) - used;
+
+    var sc = colW / L.W;
+    if(availH > 240) sc = Math.min(sc, availH / L.H);   // 화면이 너무 낮으면 폭 기준만 쓴다
+
     var card = stage.querySelector('.card');
     card.style.transform = 'scale(' + sc + ')';
+    stage.style.width  = Math.round(L.W * sc) + 'px';
     stage.style.height = Math.round(L.H * sc) + 'px';
   }
   function fitAll(){
