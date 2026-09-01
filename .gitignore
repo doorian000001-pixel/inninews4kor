@@ -5,7 +5,7 @@ cardnews-*.png
 *.zip
 
 # 로컬 폰트 (라이선스 파일은 각자 받아서 넣는다)
-site/fonts/
+fonts/
 
 # OS 부산물
 Thumbs.db
