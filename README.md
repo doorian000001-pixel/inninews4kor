@@ -81,7 +81,8 @@ index.html
 | 제목 | G마켓 산스 | 상업용 무료 · https://corp.gmarket.com/fonts/ |
 | 본문 | Pretendard | SIL OFL 1.1 · https://github.com/orioncactus/pretendard |
 
-G마켓 산스는 서드파티 CDN에서 불러온다. 안정적으로 쓰려면 공식 배포처에서 받아
+G마켓 산스는 서드파티 CDN에서 먼저 불러오고, CDN이 죽으면 로컬 파일로 넘어간다.
+CDN 없이도 쓰려면 공식 배포처에서 받아
 `site/fonts/GmarketSansBold.woff2` 등으로 넣으면 그쪽을 먼저 사용한다.
 (`site/fonts/`는 `.gitignore` 대상이므로 각 작업 PC에서 개별로 넣는다.)
 

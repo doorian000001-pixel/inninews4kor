@@ -8,21 +8,22 @@
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
 <style>
-  /* G마켓 산스 — 로컬 fonts/ 폴더가 있으면 그것을 먼저 쓰고, 없으면 CDN */
+  /* G마켓 산스 — CDN을 먼저 쓰고, CDN이 죽으면 로컬 fonts/ 폴더로 넘어간다.
+     (로컬을 먼저 두면 배포 환경에서 매번 404가 찍힌다) */
   @font-face{
     font-family:'GmarketSans'; font-weight:700; font-display:swap;
-    src:url('fonts/GmarketSansBold.woff2') format('woff2'),
-        url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff');
+    src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff'),
+        url('fonts/GmarketSansBold.woff2') format('woff2');
   }
   @font-face{
     font-family:'GmarketSans'; font-weight:500; font-display:swap;
-    src:url('fonts/GmarketSansMedium.woff2') format('woff2'),
-        url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff');
+    src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff'),
+        url('fonts/GmarketSansMedium.woff2') format('woff2');
   }
   @font-face{
     font-family:'GmarketSans'; font-weight:300; font-display:swap;
-    src:url('fonts/GmarketSansLight.woff2') format('woff2'),
-        url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansLight.woff') format('woff');
+    src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansLight.woff') format('woff'),
+        url('fonts/GmarketSansLight.woff2') format('woff2');
   }
 
   :root{
