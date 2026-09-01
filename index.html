@@ -355,8 +355,11 @@
       <button class="sm" id="b-ccopy">캡션 복사 (해시태그 포함)</button>
     </div>
     <div class="note">
-      해시태그는 플랫폼 상한인 <b>5개</b>까지 들어갑니다. 교체용 예비:
-      <span id="tag-spare" class="spare"></span>
+      해시태그는 <b>기사 내용에 맞춰 자동으로</b> 골라집니다.
+      플랫폼 상한이 <b>5개</b>이고, 넘기면 초과분이 무시되는 데서 끝나지 않고
+      <b>탐색 탭과 해시태그 페이지에서 아예 제외</b>됩니다. 그래서 5개만 넣습니다.
+      검색은 <b>🔎 줄과 카드 안 글자</b>가 함께 담당합니다.
+      <br>바꿔 끼울 예비 태그: <span id="tag-spare" class="spare"></span>
     </div>
   </div>
 
@@ -477,8 +480,59 @@ window.KIT_BACKGROUNDS = [
            df:"GmarketSans, sans-serif", dw:500 }
   };
 
-  var TAGS5  = ['#인도네시아교민','#자카르타한인','#인도네시아생활','#교민정보','#인도네시아비자'];
-  var TAGS10 = ['#자카르타정보','#KITAS','#인도네시아뉴스','#재외국민','#인도네시아취업'];
+  /* ── 해시태그 ─────────────────────────────
+     플랫폼 상한이 5개다. 초과하면 무시되는 데서 끝나지 않고
+     탐색 탭·해시태그 페이지·릴스 추천에서 제외된다. 그래서 개수를
+     늘리지 않고, 기사 내용에 맞는 5개를 고른다.
+     고정 2개(계정 정체성) + 주제 3개(기사별) 구성. */
+  var TAG_FIXED = ['#인도네시아', '#인도네시아교민'];
+
+  var TAG_RULES = [
+    { k:['환율','루피아','송금','환전','금리','달러','경상수지','외환보유액'],
+      t:['#루피아환율','#해외송금','#인도네시아경제','#환율정보'] },
+    { k:['연료','휘발유','경유','주유','bbm','유가','페르타맥스','페르탈리테','덱슬라이트'],
+      t:['#인도네시아유가','#기름값','#페르타미나','#주유소'] },
+    { k:['lpg','cng','가스통','가스'],
+      t:['#인도네시아가스','#LPG','#생활정보'] },
+    { k:['물가','생활비','가격','식품','마트','장바구니','인플레이션'],
+      t:['#인도네시아물가','#해외생활비','#장바구니물가'] },
+    { k:['krl','통근','승차','하차','전철','환승','노선','버스','터미널','교통','도로','정체'],
+      t:['#자카르타교통','#자카르타출퇴근','#대중교통','#KRL'] },
+    { k:['화산','분화','지진','쓰나미','시아가','대피','홍수','침수','태풍'],
+      t:['#인도네시아화산','#해외안전','#재난정보'] },
+    { k:['비자','체류','키타스','kitas','거주허가','재입국','이민국'],
+      t:['#인도네시아비자','#KITAS','#체류허가','#비자연장'] },
+    { k:['여권','재외국민','영사','대사관','재외동포'],
+      t:['#여권갱신','#재외국민','#영사민원'] },
+    /* '보조금'은 넣지 않는다 — 인도네시아에서 보조금 기사는 대개 연료·가스여서
+       세금 태그가 엉뚱하게 이긴다 */
+    { k:['세금','소득세','npwp','과세','관세','납세'],
+      t:['#인도네시아세금','#NPWP','#해외납세'] },
+    { k:['학교','교육','입학','학비','원서','유학','국제학교'],
+      t:['#인도네시아국제학교','#자카르타한국학교','#해외교육'] },
+    { k:['병원','의료','진료','보험','접종','응급','건강'],
+      t:['#인도네시아병원','#해외의료','#해외보험'] },
+    { k:['주거','임대','아파트','전세','월세','부동산'],
+      t:['#자카르타아파트','#인도네시아부동산','#해외주거'] },
+    { k:['취업','노동','근로','최저임금','채용','해고','임금','주재원'],
+      t:['#인도네시아취업','#해외취업','#주재원생활'] },
+    { k:['사기','범죄','치안','단속','처벌','금지','경고'],
+      t:['#해외안전','#치안정보','#교민주의'] },
+    { k:['규정','개정','제도','시행','절차','서류','신청'],
+      t:['#인도네시아생활정보','#현지규정','#교민정보'] }
+  ];
+
+  /* 지역이 언급되면 지역 태그를 우선 붙인다 */
+  var TAG_PLACES = [
+    { k:['자카르타'],   t:'#자카르타' },
+    { k:['수라바야'],   t:'#수라바야' },
+    { k:['반둥'],       t:'#반둥' },
+    { k:['땅으랑','탕그랑','알람수테라','폰독차베'], t:'#땅으랑' },
+    { k:['찌카랑'],     t:'#찌카랑' },
+    { k:['발리'],       t:'#발리' },
+    { k:['메단','수마트라','카로'], t:'#수마트라' },
+    { k:['보고르'],     t:'#보고르' }
+  ];
 
   var TODAY = (function(){
     var d = new Date();
@@ -1481,11 +1535,12 @@ window.KIT_BACKGROUNDS = [
   var EMOJI_RULES = [
     { e:'🛂', k:['비자','체류','체류허가','키타스','kitas','거주허가','재입국','이민국'] },
     { e:'🛃', k:['여권','재외국민','영사','대사관','재외동포'] },
-    { e:'💰', k:['세금','소득세','npwp','과세','관세','보조금','예산','재정'] },
+    /* '보조금'은 💰가 아니라 ⛽로 보낸다 — 현지 보조금 기사는 대개 연료·가스다 */
+    { e:'💰', k:['세금','소득세','npwp','과세','관세','납세','예산','재정'] },
     /* '루피아'는 넣지 않는다 — 모든 가격 기사에 통화 단위로 등장해
        환율 뉴스가 아닌 글까지 💱로 끌어간다 */
     { e:'💱', k:['환율','송금','환전','금리','달러','경상수지','외환보유액'] },
-    { e:'⛽', k:['연료','휘발유','경유','주유','bbm','유가',
+    { e:'⛽', k:['연료','휘발유','경유','주유','bbm','유가','보조금',
                  '페르타맥스','페르탈리테','덱슬라이트','lpg','cng','가스통'] },
     { e:'🎓', k:['학교','교육','입학','학비','원서','유학','한국학교','국제학교'] },
     { e:'🏥', k:['병원','의료','진료','보험','접종','응급','건강','질병'] },
@@ -1501,9 +1556,18 @@ window.KIT_BACKGROUNDS = [
     { e:'🛒', k:['물가','생활비','가격','식품','마트','장바구니','쇼핑'] }
   ];
 
+  /* 한국어는 어절 경계가 없어 단순 포함 검사가 오탐을 낸다
+     ("소비자"→비자, "수마트라"→마트, "순수입국"→입국).
+     앞 글자가 한글이면 다른 단어의 일부로 보고 세지 않는다. */
   function countOcc(hay, needle){
     if(!needle) return 0;
-    return hay.split(needle).length - 1;
+    var n = 0, i = hay.indexOf(needle);
+    while(i > -1){
+      var prev = i > 0 ? hay.charAt(i - 1) : '';
+      if(!/[가-힣]/.test(prev)) n++;
+      i = hay.indexOf(needle, i + 1);
+    }
+    return n;
   }
 
   function pickEmoji(text){
@@ -1521,6 +1585,63 @@ window.KIT_BACKGROUNDS = [
   }
 
   var NUM_EMOJI = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣'];
+
+  /* 기사 내용으로 태그를 고른다.
+     반환: { use:[5개], pool:[후보 전체] } */
+  function pickTags(text){
+    var t = (text || '').toLowerCase();
+
+    var scored = TAG_RULES.map(function(r){
+      var s = 0;
+      r.k.forEach(function(k){
+        var kk = k.toLowerCase();
+        s += countOcc(t, kk) * kk.length;
+      });
+      return { s:s, t:r.t };
+    }).filter(function(x){ return x.s > 0; })
+      .sort(function(a, b){ return b.s - a.s; });
+
+    var place = null;
+    for(var i = 0; i < TAG_PLACES.length && !place; i++){
+      for(var j = 0; j < TAG_PLACES[i].k.length; j++){
+        if(countOcc(t, TAG_PLACES[i].k[j].toLowerCase()) > 0){ place = TAG_PLACES[i].t; break; }
+      }
+    }
+
+    var pool = [];
+    if(place) pool.push(place);
+    scored.forEach(function(x){
+      x.t.forEach(function(tag){ if(pool.indexOf(tag) === -1) pool.push(tag); });
+    });
+
+    var use = TAG_FIXED.slice();
+    for(var p = 0; p < pool.length && use.length < 5; p++){
+      if(use.indexOf(pool[p]) === -1) use.push(pool[p]);
+    }
+    // 매칭이 없으면 기본 태그로 채운다
+    ['#자카르타한인','#교민정보','#인도네시아생활'].forEach(function(tag){
+      if(use.length < 5 && use.indexOf(tag) === -1) use.push(tag);
+    });
+
+    return { use:use, pool:pool };
+  }
+
+  /* 인스타 검색은 캡션 텍스트도 읽는다.
+     제목을 단어로 쪼개면 '무엇이·어떻게' 같은 의문사가 섞이므로,
+     실제로 본문에 등장한 주제 키워드만 뽑는다. */
+  function searchLine(text){
+    var t = (text || '').toLowerCase(), hits = [];
+    function scan(list){
+      list.forEach(function(r){
+        r.k.forEach(function(k){
+          if(countOcc(t, k.toLowerCase()) > 0 && hits.indexOf(k) === -1) hits.push(k);
+        });
+      });
+    }
+    scan(TAG_PLACES);
+    scan(TAG_RULES);
+    return hits.slice(0, 10).join(' · ');
+  }
 
   function genCaption(){
     var cover = S.cards[0], last = S.cards[S.cards.length - 1];
@@ -1548,10 +1669,19 @@ window.KIT_BACKGROUNDS = [
     var dom = (S.sourceDomain || '').trim();
     if(src)  lines.push('📰 출처 · ' + src + (dom ? ' (' + dom + ')' : ''));
     if(date) lines.push('🗓 기사 일자 · ' + date);
+
+    var sl = searchLine(allText);
+    if(sl){ lines.push(''); lines.push('🔎 ' + sl); }
+
+    var tg = pickTags(allText);
     lines.push('');
-    lines.push(TAGS5.join(' '));
+    lines.push(tg.use.join(' '));
 
     $('c-caption').value = lines.join('\n');
+
+    // 후보 태그 — 5개를 바꿔 끼울 때 고르는 풀
+    var spare = tg.pool.filter(function(x){ return tg.use.indexOf(x) === -1; });
+    $('tag-spare').textContent = spare.length ? spare.join(' ') : '(이 기사에 해당하는 예비 태그 없음)';
   }
 
   on('b-cgen','click', function(){
@@ -1562,7 +1692,6 @@ window.KIT_BACKGROUNDS = [
   });
   on('b-ccopy','click', function(){ copy($('c-caption').value, this); });
 
-  $('tag-spare').textContent = TAGS10.join(' ');
   on('b-ccopy2','click', function(){ copy($('c-caption').value, this); });
 
   window.addEventListener('resize', fitAll);
