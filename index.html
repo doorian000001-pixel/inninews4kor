@@ -367,11 +367,12 @@
       <button class="sm" id="b-ccopy">캡션 복사 (해시태그 포함)</button>
     </div>
     <div class="note">
-      해시태그는 <b>기사 내용에 맞춰 자동으로</b> 골라집니다.
-      플랫폼 상한이 <b>5개</b>이고, 넘기면 초과분이 무시되는 데서 끝나지 않고
-      <b>탐색 탭과 해시태그 페이지에서 아예 제외</b>됩니다. 그래서 5개만 넣습니다.
-      검색은 <b>🔎 줄과 카드 안 글자</b>가 함께 담당합니다.
-      <br>바꿔 끼울 예비 태그: <span id="tag-spare" class="spare"></span>
+      해시태그 <b>15개</b>를 기사 내용에 맞춰 자동으로 만듭니다.
+      구성은 고정 2개 → 지역 → <b>신문사</b> → 기사 주제 → 범용 보조 순입니다.
+      검색은 <b>🔎 줄과 카드 안 글자</b>도 함께 담당합니다.
+      <br><b>참고:</b> 인스타 상한은 5개이고, 넘기면 초과분이 무시되는 데서 끝나지 않고
+      탐색 탭·해시태그 페이지·릴스 추천에서 제외됩니다. 5개로 줄이려면 알려주세요.
+      <br>남은 예비 태그: <span id="tag-spare" class="spare"></span>
     </div>
   </div>
 
@@ -551,11 +552,20 @@ window.KIT_BACKGROUNDS = [
   };
 
   /* ── 해시태그 ─────────────────────────────
-     플랫폼 상한이 5개다. 초과하면 무시되는 데서 끝나지 않고
-     탐색 탭·해시태그 페이지·릴스 추천에서 제외된다. 그래서 개수를
-     늘리지 않고, 기사 내용에 맞는 5개를 고른다.
-     고정 2개(계정 정체성) + 주제 3개(기사별) 구성. */
+     TAG_COUNT 개를 만든다. 구성 순서는
+       고정 2개 → 지역 → 신문사 → 기사 주제 → 범용 보조.
+     참고: 인스타 상한은 5개이고, 넘기면 초과분이 무시되는 데서
+     끝나지 않고 탐색 탭·해시태그 페이지·릴스 추천에서 제외된다.
+     사용자 요청으로 15개를 넣는다. 5개로 줄이려면 TAG_COUNT만 바꾼다. */
+  var TAG_COUNT = 15;
   var TAG_FIXED = ['#인도네시아', '#인도네시아교민'];
+
+  /* 주제·지역·신문사로 15개를 못 채울 때 뒤에서 채우는 범용 태그 */
+  var TAG_GENERIC = [
+    '#인도네시아뉴스','#교민정보','#자카르타한인','#인도네시아생활',
+    '#인도네시아소식','#교민뉴스','#해외생활','#재외국민',
+    '#인도네시아정보','#자카르타','#인도네시아교민사회','#카드뉴스'
+  ];
 
   var TAG_RULES = [
     { k:['환율','루피아','송금','환전','금리','달러','경상수지','외환보유액'],
@@ -566,12 +576,13 @@ window.KIT_BACKGROUNDS = [
       t:['#인도네시아가스','#LPG','#생활정보'] },
     { k:['물가','생활비','가격','식품','마트','장바구니','인플레이션'],
       t:['#인도네시아물가','#해외생활비','#장바구니물가'] },
+    /* 범용 태그를 앞에 둔다. 출퇴근·결항처럼 상황이 좁은 태그는 뒤로 */
     { k:['krl','통근','승차','하차','전철','환승','노선','버스','터미널','교통','도로','정체'],
-      t:['#자카르타교통','#자카르타출퇴근','#대중교통','#KRL'] },
+      t:['#자카르타교통','#대중교통','#자카르타출퇴근','#KRL'] },
     { k:['화산','분화','지진','쓰나미','시아가','대피','홍수','침수','태풍'],
       t:['#인도네시아화산','#해외안전','#재난정보'] },
     { k:['항공','공항','항공편','결항','항공사','탑승','활주로'],
-      t:['#인도네시아항공','#결항','#항공권','#해외여행'] },
+      t:['#인도네시아항공','#항공권','#해외여행','#결항'] },
     { k:['산불','연무','열점','화재','엘니뇨','건기','스모그','대기질'],
       t:['#인도네시아산불','#연무','#대기질','#해외안전'] },
     { k:['비자','체류','키타스','kitas','거주허가','재입국','이민국'],
@@ -638,17 +649,23 @@ window.KIT_BACKGROUNDS = [
      안 된다. 배경 색조를 검정 / 적 / 주황으로 갈라 한눈에 구분되게 했다. */
   var SOURCES = [
     { name:'한인포스트',         domain:'haninpost.com',
-      brand:'#4DB2EC', main:'#062A45', bg:'#03131F', accent:'#4DB2EC' },
+      brand:'#4DB2EC', main:'#062A45', bg:'#03131F', accent:'#4DB2EC',
+      tags:['#한인포스트','#haninpost'] },
     { name:'자카르타경제신문',   domain:'pagi.co.id',
-      brand:'#F0F028', main:'#26260A', bg:'#111103', accent:'#F0F028' },
+      brand:'#F0F028', main:'#26260A', bg:'#111103', accent:'#F0F028',
+      tags:['#자카르타경제신문','#PAGI'] },
     { name:'주인도네시아 대사관', domain:'id.mofa.go.kr',
-      brand:'#0B2545', main:'#0B2545', bg:'#061527', accent:'#F4C95D' },
+      brand:'#0B2545', main:'#0B2545', bg:'#061527', accent:'#F4C95D',
+      tags:['#주인도네시아대사관','#재외공관'] },
     { name:'The Jakarta Post',   domain:'thejakartapost.com',
-      brand:'#DC2828', main:'#17110F', bg:'#070404', accent:'#DC2828' },
+      brand:'#DC2828', main:'#17110F', bg:'#070404', accent:'#DC2828',
+      tags:['#TheJakartaPost','#자카르타포스트'] },
     { name:'Kompas',             domain:'kompas.com',
-      brand:'#E55425', main:'#33200A', bg:'#150A03', accent:'#F5793A' },
+      brand:'#E55425', main:'#33200A', bg:'#150A03', accent:'#F5793A',
+      tags:['#Kompas','#꼼빠스'] },
     { name:'ANTARA News',        domain:'antaranews.com',
-      brand:'#CC0000', main:'#3A0A0A', bg:'#170303', accent:'#FF4040' }
+      brand:'#CC0000', main:'#3A0A0A', bg:'#170303', accent:'#FF4040',
+      tags:['#ANTARANews','#안타라뉴스'] }
   ];
 
   function sourceTheme(name){
@@ -1715,20 +1732,25 @@ window.KIT_BACKGROUNDS = [
       }
     }
 
+    /* 지역 → 신문사 → 주제 순으로 후보를 쌓는다 */
     var pool = [];
-    if(place) pool.push(place);
-    scored.forEach(function(x){
-      x.t.forEach(function(tag){ if(pool.indexOf(tag) === -1) pool.push(tag); });
-    });
+    function push(tag){ if(tag && pool.indexOf(tag) === -1) pool.push(tag); }
+
+    if(place) push(place);
+
+    var th = sourceTheme(S.source);
+    if(th && th.tags) th.tags.forEach(push);
+
+    scored.forEach(function(x){ x.t.forEach(push); });
 
     var use = TAG_FIXED.slice();
-    for(var p = 0; p < pool.length && use.length < 5; p++){
+    for(var p = 0; p < pool.length && use.length < TAG_COUNT; p++){
       if(use.indexOf(pool[p]) === -1) use.push(pool[p]);
     }
-    // 매칭이 없으면 기본 태그로 채운다
-    ['#자카르타한인','#교민정보','#인도네시아생활'].forEach(function(tag){
-      if(use.length < 5 && use.indexOf(tag) === -1) use.push(tag);
-    });
+    /* 남는 자리는 범용 태그로 채운다 */
+    for(var q = 0; q < TAG_GENERIC.length && use.length < TAG_COUNT; q++){
+      if(use.indexOf(TAG_GENERIC[q]) === -1) use.push(TAG_GENERIC[q]);
+    }
 
     return { use:use, pool:pool };
   }
