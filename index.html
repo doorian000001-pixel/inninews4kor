@@ -122,6 +122,23 @@
   .card .rule{position:absolute;}
   .card .desc{position:absolute;word-break:keep-all;overflow-wrap:break-word;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;font-weight:600;}
   .card .divl{position:absolute;height:3px;}
+
+  /* 형태별 블록 — 설명 자리를 대신 차지한다 */
+  .card .block{position:absolute;overflow:hidden;}
+  .card .block .row{display:flex;align-items:center;width:100%;box-sizing:border-box;}
+  .card .block .cbox{
+    flex:none;box-sizing:border-box;border-style:solid;
+    display:flex;align-items:center;justify-content:center;font-weight:800;
+  }
+  .card .block .ctext{
+    min-width:0;flex:1;word-break:keep-all;overflow-wrap:break-word;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;
+  }
+  .card .block .mlabel{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;}
+  .card .block .mval{flex:none;text-align:right;font-weight:800;}
+  .card .block .msep{width:100%;height:2px;}
+  .card .block .duebig{letter-spacing:-.03em;font-weight:800;white-space:nowrap;}
+  .card .block .duenote{word-break:keep-all;overflow-wrap:break-word;font-weight:600;}
   .card .foot2{
     position:absolute;display:flex;align-items:flex-start;justify-content:space-between;gap:24px;
   }
@@ -217,6 +234,16 @@
   .counter{margin-left:auto;font-size:11px;font-weight:800;color:var(--accent);}
   .counter.over{color:var(--warn);}
   .editor .btns{margin-top:2px;}
+  .kinds{display:flex;gap:6px;flex-wrap:wrap;}
+  .kind{
+    font:inherit;font-size:11px;font-weight:800;cursor:pointer;
+    padding:5px 10px;border-radius:999px;border:1px solid var(--line);
+    background:transparent;color:inherit;opacity:.6;
+  }
+  .kind:hover{opacity:1;border-color:var(--accent);}
+  .kind.on{background:var(--accent);color:var(--main);border-color:var(--accent);opacity:1;}
+  .hint{font-size:11px;font-weight:600;opacity:.6;}
+  .duegrid{display:grid;grid-template-columns:minmax(0,140px) minmax(0,1fr);gap:8px;}
 
   @media (max-width:900px){
     .item.active{grid-template-columns:1fr;}
@@ -543,7 +570,7 @@ window.KIT_BACKGROUNDS = [
   }
 
   function applyTopicBg(){
-    var all = S.cards.map(function(c){ return (c.title||'') + ' ' + (c.desc||''); }).join(' ') + ' ' + S.topic;
+    var all = S.cards.map(cardAllText).join(' ') + ' ' + S.topic;
     var list = topicBackgrounds(all);
     S.image = null;
     S.cards.forEach(function(c, i){ c.bgRef = list[i] || 'city'; c.image = null; });
@@ -703,6 +730,17 @@ window.KIT_BACKGROUNDS = [
     return null;
   }
 
+  /* ── 카드 형태 ──────────────────────────
+     설명 자리에 무엇을 그릴지만 다르다. 표지 띠·주제·큰 제목·구분선·
+     하단 표기·안전 영역 계산은 네 형태가 모두 똑같이 쓴다. */
+  var KINDS = {
+    text:  { label:'설명',     hint:'문장으로 설명한다' },
+    check: { label:'체크리스트', hint:'한 줄에 항목 하나. 서류·준비물' },
+    money: { label:'금액 비교', hint:'한 줄에 「항목 | 금액」' },
+    due:   { label:'마감',     hint:'날짜 하나를 크게' }
+  };
+  var KIND_ORDER = ['text','check','money','due'];
+
   var STORE = 'cardnews-kit-v3';
 
   /* ── 상태 ───────────────────────────────── */
@@ -718,7 +756,8 @@ window.KIT_BACKGROUNDS = [
     sourceDomain:SOURCES[0].domain,
     articleDate:TODAY,
     cards:COPY.map(function(c){
-      return { title:c.title, desc:c.desc, image:null, bgRef:null };
+      return { title:c.title, desc:c.desc, kind:'text', rows:[], due:{ date:'' },
+               image:null, bgRef:null };
     })
   };
 
@@ -728,6 +767,24 @@ window.KIT_BACKGROUNDS = [
       for(var k in S) if(saved[k] !== undefined) S[k] = saved[k];
     }
   }catch(e){}
+
+  /* 형태를 쓰지 않던 시절에 저장된 카드도 그대로 열리게 한다 */
+  function normalizeCard(c){
+    if(!c || typeof c !== 'object') c = {};
+    if(typeof c.title !== 'string') c.title = '';
+    if(typeof c.desc  !== 'string') c.desc  = '';
+    if(!KINDS[c.kind]) c.kind = 'text';
+    if(!Array.isArray(c.rows)) c.rows = [];
+    c.rows = c.rows.map(function(r){
+      if(typeof r === 'string') return { a:r, b:'' };
+      return { a:(r && typeof r.a === 'string') ? r.a : '',
+               b:(r && typeof r.b === 'string') ? r.b : '' };
+    });
+    if(!c.due || typeof c.due !== 'object') c.due = { date:'' };
+    if(typeof c.due.date !== 'string') c.due.date = '';
+    return c;
+  }
+  S.cards = S.cards.map(normalizeCard);
 
   function save(){
     try{ localStorage.setItem(STORE, JSON.stringify(S)); }
@@ -772,6 +829,14 @@ window.KIT_BACKGROUNDS = [
       TITLE_LHR:1.22, TITLE_LINES:2,
       RULE_GAP:40, RULE_W:110, RULE_H:8,
       DESC_GAP:40, DESC_FS:dfs, DESC_LH:Math.round(dfs * 1.62), DESC_LINES:5,
+
+      /* 체크리스트·금액 비교의 한 줄 — 제목 1줄일 때 7줄이 들어간다 */
+      ROW_FS:Math.round(40 * S.descScale), ROW_LH:Math.round(60 * S.descScale),
+      BOX:34, BOX_GAP:24, ROW_MAX:7,
+      /* 마감 */
+      DUE_FS:Math.round(126 * S.titleScale), DUE_LH:Math.round(140 * S.titleScale),
+      DUE_GAP:18, DUE_NOTE_FS:dfs, DUE_NOTE_LH:Math.round(dfs * 1.55), DUE_NOTE_LINES:3,
+
       DIV_Y:DIV_Y,
       FOOT_TOP:FOOT_TOP, FOOT_FS:FOOT_FS, FOOT_LH:FOOT_LH,
       NUM_FS:40
@@ -781,22 +846,198 @@ window.KIT_BACKGROUNDS = [
   /* 제목 블록 높이가 가변이므로 룰·설명 위치를 제목 줄 수에서 계산한다.
      설명 줄 수는 하단 표기와 겹치지 않도록 남은 공간에서 산출한다. */
   function metrics(card, L, F){
+    var kind  = (card && KINDS[card.kind]) ? card.kind : 'text';
     var tfs   = fitTitle(card.title, L, F);
     var tlh   = Math.round(tfs * L.TITLE_LHR);
     var tline = wrapLines(card.title, tfs, F.tw, F.tf, L.CW, L.TITLE_LINES);
     var tH    = tlh * tline.length;
     var ruleY = L.TITLE_TOP + tH + L.RULE_GAP;
-    var dTop  = ruleY + L.RULE_H + L.DESC_GAP;
+
+    /* 마감형은 큰 날짜 자체가 강조라 룰을 빼고 그 자리를 블록에 준다 */
+    var hasRule = (kind !== 'due');
+    var dTop    = ruleY + (hasRule ? L.RULE_H : 0) + L.DESC_GAP;
 
     var room  = L.DIV_Y - 28 - dTop;                  // 구분선까지 남은 높이
     var lines = Math.floor(room / L.DESC_LH);
     if(lines < 1) lines = 1;
     if(lines > L.DESC_LINES) lines = L.DESC_LINES;
 
+    /* 체크리스트·금액 비교가 넣을 수 있는 줄 수 */
+    var rowMax = Math.floor(room / L.ROW_LH);
+    if(rowMax < 1) rowMax = 1;
+    if(rowMax > L.ROW_MAX) rowMax = L.ROW_MAX;
+
+    /* 마감형 — 큰 날짜 아래에 설명 몇 줄이 들어가는지 */
+    var noteRoom  = room - L.DUE_LH - L.DUE_GAP;
+    var noteLines = Math.floor(noteRoom / L.DUE_NOTE_LH);
+    if(noteLines < 0) noteLines = 0;
+    if(noteLines > L.DUE_NOTE_LINES) noteLines = L.DUE_NOTE_LINES;
+
     return {
-      tfs:tfs, tlh:tlh, tlines:tline, tH:tH,
-      ruleY:ruleY, descTop:dTop, descLines:lines
+      kind:kind, tfs:tfs, tlh:tlh, tlines:tline, tH:tH,
+      hasRule:hasRule, ruleY:ruleY,
+      descTop:dTop, descLines:lines, room:room,
+      rowMax:rowMax, noteTop:dTop + L.DUE_LH + L.DUE_GAP, noteLines:noteLines
     };
+  }
+
+  /* ── 형태별 자료 다루기 ─────────────────── */
+  /* 편집칸은 한 줄에 항목 하나. 금액 비교는 「항목 | 금액」으로 가른다. */
+  function parseRows(textValue, kind){
+    return (textValue || '').split('\n').map(function(ln){
+      var s = ln.replace(/\s+/g, ' ').trim();
+      if(!s) return null;
+      if(kind !== 'money') return { a:s, b:'' };
+      var m = s.split('|');
+      if(m.length >= 2) return { a:m[0].trim(), b:m.slice(1).join('|').trim() };
+      /* 구분자를 안 쓰면 마지막 덩어리를 금액으로 본다 */
+      var sp = s.lastIndexOf(' ');
+      if(sp > 0) return { a:s.slice(0, sp).trim(), b:s.slice(sp + 1).trim() };
+      return { a:s, b:'' };
+    }).filter(Boolean);
+  }
+  function rowsToText(rows, kind){
+    return (rows || []).map(function(r){
+      if(kind !== 'money') return r.a;
+      return r.b ? (r.a + ' | ' + r.b) : r.a;
+    }).join('\n');
+  }
+  /* 카드가 실제로 보여줄 줄 — 넘치는 만큼은 잘라낸다 */
+  function shownRows(card, M){
+    return (card.rows || []).slice(0, M.rowMax);
+  }
+  function dueBig(card){
+    var d = (card.due && card.due.date || '').trim();
+    if(!d) return '날짜 미입력';
+    var m = d.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if(m) return parseInt(m[2], 10) + '월 ' + parseInt(m[3], 10) + '일';
+    return d;
+  }
+
+  function esc(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* 설명 자리에 들어갈 블록 — 미리보기(HTML)와 PNG(canvas)가 같은 값을 쓴다 */
+  function blockHtml(c, M, L, F){
+    var base = 'left:' + L.PAD + 'px;width:' + L.CW + 'px;top:' + M.descTop + 'px;' +
+               'font-family:' + F.df + ';';
+
+    if(M.kind === 'check' || M.kind === 'money'){
+      var rows = shownRows(c, M);
+      var html = rows.map(function(r, k){
+        var sep = (M.kind === 'money' && k < rows.length - 1)
+          ? 'border-bottom:2px solid ' + rgba(S.accent, .22) + ';' : '';
+        if(M.kind === 'check'){
+          return '<div class="row" style="height:' + L.ROW_LH + 'px;' + sep + '">' +
+            '<div class="cbox" style="width:' + L.BOX + 'px;height:' + L.BOX + 'px;' +
+              'border-width:4px;border-color:' + S.accent + ';"></div>' +
+            '<div class="ctext" style="margin-left:' + L.BOX_GAP + 'px;font-size:' + L.ROW_FS + 'px;' +
+              'color:' + KIT.text + ';font-weight:' + F.dw + ';">' + esc(r.a) + '</div>' +
+          '</div>';
+        }
+        return '<div class="row" style="height:' + L.ROW_LH + 'px;' + sep + '">' +
+          '<div class="mlabel" style="font-size:' + L.ROW_FS + 'px;color:' + KIT.text + ';' +
+            'font-weight:' + F.dw + ';">' + esc(r.a) + '</div>' +
+          '<div class="mval" style="margin-left:32px;font-size:' + L.ROW_FS + 'px;' +
+            'color:' + S.accent + ';">' + esc(r.b) + '</div>' +
+        '</div>';
+      }).join('');
+      return '<div class="block" data-block data-focus="rows" style="' + base +
+             'height:' + M.room + 'px;">' + html + '</div>';
+    }
+
+    if(M.kind === 'due'){
+      return '<div class="block" data-block data-focus="due" style="' + base +
+               'height:' + M.room + 'px;">' +
+        '<div class="duebig" style="font-size:' + L.DUE_FS + 'px;line-height:' + L.DUE_LH + 'px;' +
+          'color:' + S.accent + ';font-family:' + F.tf + ';">' + esc(dueBig(c)) + '</div>' +
+        (M.noteLines > 0 ?
+          '<div class="duenote" style="margin-top:' + L.DUE_GAP + 'px;font-size:' + L.DUE_NOTE_FS + 'px;' +
+            'line-height:' + L.DUE_NOTE_LH + 'px;color:' + KIT.text + ';font-weight:' + F.dw + ';' +
+            'display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;' +
+            '-webkit-line-clamp:' + M.noteLines + ';max-height:' + (L.DUE_NOTE_LH * M.noteLines) + 'px;">' +
+            esc(c.desc) + '</div>' : '') +
+      '</div>';
+    }
+
+    return '<div class="desc" data-desc data-focus="desc" style="' + base +
+      'font-size:' + L.DESC_FS + 'px;line-height:' + L.DESC_LH + 'px;' +
+      'max-height:' + (L.DESC_LH * M.descLines) + 'px;-webkit-line-clamp:' + M.descLines + ';' +
+      'color:' + KIT.text + ';font-weight:' + F.dw + ';"></div>';
+  }
+
+  /* blockHtml 과 같은 값을 캔버스에 그린다 */
+  function drawBlock(g, c, M, L, F){
+    if(M.kind === 'check'){
+      shownRows(c, M).forEach(function(r, k){
+        var top = M.descTop + L.ROW_LH * k, mid = top + L.ROW_LH / 2;
+        g.strokeStyle = S.accent;
+        g.lineWidth = 4;
+        g.strokeRect(L.PAD + 2, mid - L.BOX / 2 + 2, L.BOX - 4, L.BOX - 4);
+        var tx = L.PAD + L.BOX + L.BOX_GAP;
+        g.fillStyle = KIT.text;
+        g.font = F.dw + ' ' + L.ROW_FS + 'px ' + F.df;
+        g.fillText(wrapLines(r.a, L.ROW_FS, F.dw, F.df, L.W - tx - L.PAD, 1)[0], tx, mid);
+      });
+      return;
+    }
+
+    if(M.kind === 'money'){
+      var rows = shownRows(c, M);
+      rows.forEach(function(r, k){
+        var top = M.descTop + L.ROW_LH * k, mid = top + L.ROW_LH / 2;
+
+        g.font = '800 ' + L.ROW_FS + 'px ' + F.df;
+        var vText = wrapLines(r.b, L.ROW_FS, 800, F.df, L.CW * 0.55, 1)[0] || '';
+        var vW = vText ? g.measureText(vText).width : 0;
+
+        g.fillStyle = KIT.text;
+        g.font = F.dw + ' ' + L.ROW_FS + 'px ' + F.df;
+        g.fillText(
+          wrapLines(r.a, L.ROW_FS, F.dw, F.df, L.CW - vW - 32, 1)[0],
+          L.PAD, mid
+        );
+
+        if(vText){
+          g.textAlign = 'right';
+          g.fillStyle = S.accent;
+          g.font = '800 ' + L.ROW_FS + 'px ' + F.df;
+          g.fillText(vText, L.PAD + L.CW, mid);
+          g.textAlign = 'left';
+        }
+
+        if(k < rows.length - 1){
+          g.fillStyle = rgba(S.accent, .22);
+          g.fillRect(L.PAD, top + L.ROW_LH - 2, L.CW, 2);
+        }
+      });
+      return;
+    }
+
+    if(M.kind === 'due'){
+      g.fillStyle = S.accent;
+      g.font = F.tw + ' ' + L.DUE_FS + 'px ' + F.tf;
+      g.fillText(
+        wrapLines(dueBig(c), L.DUE_FS, F.tw, F.tf, L.CW, 1)[0],
+        L.PAD, M.descTop + L.DUE_LH / 2
+      );
+      if(M.noteLines > 0 && c.desc){
+        g.fillStyle = KIT.text;
+        g.font = F.dw + ' ' + L.DUE_NOTE_FS + 'px ' + F.df;
+        wrapLines(c.desc, L.DUE_NOTE_FS, F.dw, F.df, L.CW, M.noteLines).forEach(function(ln, k){
+          g.fillText(ln, L.PAD, M.noteTop + L.DUE_NOTE_LH * k + L.DUE_NOTE_LH / 2);
+        });
+      }
+      return;
+    }
+
+    g.fillStyle = KIT.text;
+    g.font = F.dw + ' ' + L.DESC_FS + 'px ' + F.df;
+    wrapLines(c.desc, L.DESC_FS, F.dw, F.df, L.CW, M.descLines).forEach(function(ln, k){
+      g.fillText(ln, L.PAD, M.descTop + L.DESC_LH * k + L.DESC_LH / 2);
+    });
   }
 
   /* ── 텍스트 측정 ────────────────────────── */
@@ -896,11 +1137,44 @@ window.KIT_BACKGROUNDS = [
             '<textarea data-etitle rows="2"></textarea>' +
           '</div>' +
           '<div class="f">' +
-            '<label>세부 설명' +
-              '<span class="counter" data-dc></span>' +
-            '</label>' +
-            '<textarea data-edesc rows="6"></textarea>' +
+            '<label>카드 형태</label>' +
+            '<div class="kinds">' +
+              KIND_ORDER.map(function(k){
+                return '<button class="kind' + (c.kind === k ? ' on' : '') + '" ' +
+                       'data-kind="' + k + '" data-ci="' + i + '">' + KINDS[k].label + '</button>';
+              }).join('') +
+            '</div>' +
+            '<div class="hint">' + KINDS[c.kind].hint + '</div>' +
           '</div>' +
+          (c.kind === 'check' || c.kind === 'money' ?
+            '<div class="f">' +
+              '<label>' + (c.kind === 'money' ? '항목과 금액' : '항목') +
+                '<span class="counter" data-rc></span>' +
+              '</label>' +
+              '<textarea data-erows rows="7"></textarea>' +
+            '</div>'
+          : c.kind === 'due' ?
+            '<div class="f">' +
+              '<label>마감 날짜</label>' +
+              '<div class="duegrid">' +
+                '<input type="date" data-edate>' +
+                '<input type="text" data-edatefree placeholder="또는 직접 입력">' +
+              '</div>' +
+            '</div>' +
+            '<div class="f">' +
+              '<label>날짜 아래 설명' +
+                '<span class="counter" data-dc></span>' +
+              '</label>' +
+              '<textarea data-edesc rows="4"></textarea>' +
+            '</div>'
+          :
+            '<div class="f">' +
+              '<label>세부 설명' +
+                '<span class="counter" data-dc></span>' +
+              '</label>' +
+              '<textarea data-edesc rows="6"></textarea>' +
+            '</div>'
+          ) +
           '<div class="btns">' +
             '<button class="gold sm" data-save="' + i + '">이 카드 PNG</button>' +
             '<button class="sm" data-cimg="' + i + '">배경</button>' +
@@ -931,14 +1205,11 @@ window.KIT_BACKGROUNDS = [
           'max-height:' + (M.tlh * L.TITLE_LINES) + 'px;-webkit-line-clamp:' + L.TITLE_LINES + ';' +
           'font-family:' + F.tf + ';font-weight:' + F.tw + ';"></div>' +
 
-        '<div class="rule" data-rule style="left:' + L.PAD + 'px;top:' + M.ruleY + 'px;' +
-          'width:' + L.RULE_W + 'px;height:' + L.RULE_H + 'px;background:' + S.accent + '"></div>' +
+        (M.hasRule ?
+          '<div class="rule" data-rule style="left:' + L.PAD + 'px;top:' + M.ruleY + 'px;' +
+            'width:' + L.RULE_W + 'px;height:' + L.RULE_H + 'px;background:' + S.accent + '"></div>' : '') +
 
-        '<div class="desc" data-desc data-focus="desc" ' +
-          'style="left:' + L.PAD + 'px;width:' + L.CW + 'px;top:' + M.descTop + 'px;' +
-          'font-size:' + L.DESC_FS + 'px;line-height:' + L.DESC_LH + 'px;' +
-          'max-height:' + (L.DESC_LH * M.descLines) + 'px;-webkit-line-clamp:' + M.descLines + ';' +
-          'color:' + KIT.text + ';font-family:' + F.df + ';font-weight:' + F.dw + ';"></div>' +
+        blockHtml(c, M, L, F) +
 
         '<div class="divl" style="left:' + L.PAD + 'px;width:' + L.CW + 'px;top:' + L.DIV_Y + 'px;' +
           'background:' + rgba(S.accent, .55) + '"></div>' +
@@ -960,7 +1231,8 @@ window.KIT_BACKGROUNDS = [
 
       card.querySelector('[data-eye]').textContent = S.topic;
       card.querySelector('[data-title]').textContent = c.title;
-      card.querySelector('[data-desc]').textContent = c.desc;
+      var dEl = card.querySelector('[data-desc]');
+      if(dEl) dEl.textContent = c.desc;
       card.querySelector('.fsrc').textContent  = srcText();
       card.querySelector('.fdate').textContent = dateText();
 
@@ -976,60 +1248,130 @@ window.KIT_BACKGROUNDS = [
      카드 글자를 클릭하면 해당 입력칸으로 커서가 간다. */
   function bind(item, i, L, F){
     var card = item.querySelector('.card');
+    var c    = S.cards[i];
     var t    = card.querySelector('[data-title]');
-    var d    = card.querySelector('[data-desc]');
     var rule = card.querySelector('[data-rule]');
     var et   = item.querySelector('[data-etitle]');
     var ed   = item.querySelector('[data-edesc]');
+    var er   = item.querySelector('[data-erows]');
+    var edt  = item.querySelector('[data-edate]');
+    var edf  = item.querySelector('[data-edatefree]');
     var tc   = item.querySelector('[data-tc]');
     var dc   = item.querySelector('[data-dc]');
+    var rc   = item.querySelector('[data-rc]');
 
-    et.value = S.cards[i].title;
-    ed.value = S.cards[i].desc;
+    et.value = c.title;
+    if(ed) ed.value = c.desc;
+    if(er) er.value = rowsToText(c.rows, c.kind);
+    if(edt) edt.value = /^\d{4}-\d{2}-\d{2}$/.test(c.due.date) ? c.due.date : '';
+    if(edf) edf.value = /^\d{4}-\d{2}-\d{2}$/.test(c.due.date) ? '' : c.due.date;
 
-    function counts(){
-      var M = metrics(S.cards[i], L, F);
-      var tl = wrapAll(S.cards[i].title, M.tfs, F.tw, F.tf, L.CW).length;
-      var dl = wrapAll(S.cards[i].desc, L.DESC_FS, F.dw, F.df, L.CW).length;
-
-      tc.textContent = tl + ' / ' + L.TITLE_LINES + '줄' + (tl > L.TITLE_LINES ? ' 넘침' : '');
-      tc.className = 'counter' + (tl > L.TITLE_LINES ? ' over' : '');
-      dc.textContent = dl + ' / ' + M.descLines + '줄' + (dl > M.descLines ? ' 넘침' : '');
-      dc.className = 'counter' + (dl > M.descLines ? ' over' : '');
-      return M;
-    }
-
-    et.addEventListener('input', function(){
-      S.cards[i].title = this.value.replace(/\s+/g, ' ');
-      var M = counts();
-      t.textContent = S.cards[i].title;
-      t.style.fontSize = M.tfs + 'px';
-      t.style.lineHeight = M.tlh + 'px';
-      t.style.maxHeight = (M.tlh * L.TITLE_LINES) + 'px';
-      rule.style.top = M.ruleY + 'px';
-      d.style.top = M.descTop + 'px';
-      d.style.maxHeight = (L.DESC_LH * M.descLines) + 'px';
-      d.style.webkitLineClamp = M.descLines;
-      saveSoon();
-    });
-
-    ed.addEventListener('input', function(){
-      S.cards[i].desc = this.value.replace(/\s+/g, ' ');
-      d.textContent = S.cards[i].desc;
-      counts();
-      saveSoon();
-    });
-
-    /* 카드 글자 클릭 → 해당 입력칸으로 */
-    [t, d].forEach(function(el){
-      el.style.cursor = 'text';
-      el.addEventListener('click', function(){
-        var target = this.getAttribute('data-focus') === 'title' ? et : ed;
-        target.focus();
-        target.setSelectionRange(target.value.length, target.value.length);
+    /* 형태가 바뀌면 편집칸 구성 자체가 달라지므로 통째로 다시 그린다 */
+    Array.prototype.forEach.call(item.querySelectorAll('[data-kind]'), function(btn){
+      btn.addEventListener('click', function(){
+        var k = this.getAttribute('data-kind');
+        if(!KINDS[k] || c.kind === k) return;
+        c.kind = k;
+        save(); render(); genCaption();
       });
     });
 
+    function counts(){
+      var M = metrics(c, L, F);
+      var tl = wrapAll(c.title, M.tfs, F.tw, F.tf, L.CW).length;
+
+      tc.textContent = tl + ' / ' + L.TITLE_LINES + '줄' + (tl > L.TITLE_LINES ? ' 넘침' : '');
+      tc.className = 'counter' + (tl > L.TITLE_LINES ? ' over' : '');
+
+      if(dc){
+        var lim = (c.kind === 'due') ? M.noteLines : M.descLines;
+        var dl  = c.desc ? wrapAll(c.desc, (c.kind === 'due' ? L.DUE_NOTE_FS : L.DESC_FS),
+                                   F.dw, F.df, L.CW).length : 0;
+        dc.textContent = dl + ' / ' + lim + '줄' + (dl > lim ? ' 넘침' : '');
+        dc.className = 'counter' + (dl > lim ? ' over' : '');
+      }
+      if(rc){
+        var n = (c.rows || []).length;
+        rc.textContent = n + ' / ' + M.rowMax + '줄' + (n > M.rowMax ? ' 넘침' : '');
+        rc.className = 'counter' + (n > M.rowMax ? ' over' : '');
+      }
+      return M;
+    }
+
+    /* 블록은 형태마다 구조가 달라 통째로 갈아 끼운다 */
+    function paintBlock(M){
+      var old = card.querySelector('[data-block], [data-desc]');
+      if(!old) return;
+      var tmp = document.createElement('div');
+      tmp.innerHTML = blockHtml(c, M, L, F);
+      var fresh = tmp.firstChild;
+      old.parentNode.replaceChild(fresh, old);
+      var dEl = card.querySelector('[data-desc]');
+      if(dEl) dEl.textContent = c.desc;
+      focusable(fresh);
+    }
+
+    /* 카드 글자를 클릭하면 해당 입력칸으로 커서가 간다 */
+    function focusable(el){
+      if(!el) return;
+      el.style.cursor = 'text';
+      el.addEventListener('click', function(){
+        var f = this.getAttribute('data-focus');
+        var target = f === 'title' ? et : f === 'rows' ? er : f === 'due' ? (edt || edf) : ed;
+        if(!target) return;
+        target.focus();
+        if(target.setSelectionRange && target.type !== 'date'){
+          target.setSelectionRange(target.value.length, target.value.length);
+        }
+      });
+    }
+
+    et.addEventListener('input', function(){
+      c.title = this.value.replace(/\s+/g, ' ');
+      var M = counts();
+      t.textContent = c.title;
+      t.style.fontSize = M.tfs + 'px';
+      t.style.lineHeight = M.tlh + 'px';
+      t.style.maxHeight = (M.tlh * L.TITLE_LINES) + 'px';
+      if(rule) rule.style.top = M.ruleY + 'px';
+      paintBlock(M);
+      saveSoon();
+    });
+
+    if(ed) ed.addEventListener('input', function(){
+      c.desc = this.value.replace(/\s+/g, ' ');
+      var M = counts();
+      if(c.kind === 'due') paintBlock(M);
+      else {
+        var dEl = card.querySelector('[data-desc]');
+        if(dEl) dEl.textContent = c.desc;
+      }
+      saveSoon();
+    });
+
+    if(er) er.addEventListener('input', function(){
+      c.rows = parseRows(this.value, c.kind);
+      paintBlock(counts());
+      saveSoon();
+    });
+
+    function setDue(v){
+      c.due.date = v;
+      paintBlock(counts());
+      saveSoon();
+    }
+    if(edt) edt.addEventListener('input', function(){
+      if(edf) edf.value = '';
+      setDue(this.value);
+    });
+    if(edf) edf.addEventListener('input', function(){
+      var v = this.value.replace(/\s+/g, ' ').trim();
+      if(v && edt) edt.value = '';
+      setDue(v || (edt ? edt.value : ''));
+    });
+
+    focusable(t);
+    focusable(card.querySelector('[data-block], [data-desc]'));
     counts();
   }
 
@@ -1199,16 +1541,14 @@ window.KIT_BACKGROUNDS = [
           g.fillText(ln, L.PAD, L.TITLE_TOP + M.tlh * k + M.tlh / 2);
         });
 
-        // 강조 룰
-        g.fillStyle = S.accent;
-        g.fillRect(L.PAD, M.ruleY, L.RULE_W, L.RULE_H);
+        // 강조 룰 (마감형은 큰 날짜가 강조라 넣지 않는다)
+        if(M.hasRule){
+          g.fillStyle = S.accent;
+          g.fillRect(L.PAD, M.ruleY, L.RULE_W, L.RULE_H);
+        }
 
-        // 세부 설명 (최대 4줄)
-        g.fillStyle = KIT.text;
-        g.font = F.dw + ' ' + L.DESC_FS + 'px ' + F.df;
-        wrapLines(c.desc, L.DESC_FS, F.dw, F.df, L.CW, M.descLines).forEach(function(ln, k){
-          g.fillText(ln, L.PAD, M.descTop + L.DESC_LH * k + L.DESC_LH / 2);
-        });
+        // 형태별 블록
+        drawBlock(g, c, M, L, F);
 
         // 구분선
         g.fillStyle = rgba(S.accent, .55);
@@ -1524,7 +1864,15 @@ window.KIT_BACKGROUNDS = [
       sourceDomain: S.sourceDomain,
       articleDate: S.articleDate,
       cards: S.cards.map(function(c, i){
-        return { no:i+1, title:c.title, desc:c.desc };
+        var o = { no:i+1, title:c.title, desc:c.desc };
+        if(c.kind && c.kind !== 'text') o.kind = c.kind;
+        if(c.kind === 'check' || c.kind === 'money'){
+          o.rows = (c.rows || []).map(function(r){
+            return c.kind === 'money' ? { a:r.a, b:r.b } : r.a;
+          });
+        }
+        if(c.kind === 'due') o.due = { date:c.due.date };
+        return o;
       })
     };
   }
@@ -1568,9 +1916,16 @@ window.KIT_BACKGROUNDS = [
       if(!item || typeof item !== 'object'){ skipped++; return; }
       var t = typeof item.title === 'string' ? item.title.replace(/\s+/g,' ').trim() : '';
       var d = typeof item.desc  === 'string' ? item.desc.replace(/\s+/g,' ').trim()  : '';
-      if(!t && !d){ skipped++; return; }
+      var hasKind = typeof item.kind === 'string' && KINDS[item.kind];
+      if(!t && !d && !hasKind){ skipped++; return; }
       if(t) S.cards[i].title = t;
       if(d) S.cards[i].desc = d;
+      if(hasKind) S.cards[i].kind = item.kind;
+      if(Array.isArray(item.rows)) S.cards[i].rows = item.rows;
+      if(item.due && typeof item.due === 'object' && typeof item.due.date === 'string'){
+        S.cards[i].due = { date:item.due.date };
+      }
+      S.cards[i] = normalizeCard(S.cards[i]);
       used++;
     });
 
@@ -1817,15 +2172,34 @@ window.KIT_BACKGROUNDS = [
     return hits.slice(0, 10).join(' · ');
   }
 
+  /* 캡션에 들어갈 본문 — 형태마다 모양이 다르다 */
+  function cardCaptionText(c){
+    if(c.kind === 'check'){
+      return (c.rows || []).map(function(r){ return '· ' + r.a; }).join('\n');
+    }
+    if(c.kind === 'money'){
+      return (c.rows || []).map(function(r){
+        return '· ' + r.a + (r.b ? ' — ' + r.b : '');
+      }).join('\n');
+    }
+    if(c.kind === 'due'){
+      return '📅 ' + dueBig(c) + (c.desc ? '\n' + c.desc : '');
+    }
+    return c.desc || '';
+  }
+  /* 이모지·태그·배경을 고르려고 훑는 글자 */
+  function cardAllText(c){
+    var extra = (c.rows || []).map(function(r){ return r.a + ' ' + r.b; }).join(' ');
+    return (c.title || '') + ' ' + (c.desc || '') + ' ' + extra;
+  }
+
   function genCaption(){
     var cover = S.cards[0], last = S.cards[S.cards.length - 1];
     var body  = S.cards.slice(1, S.cards.length - 1);
     var src   = (S.source || '').trim();
     var date  = (S.articleDate || '').trim().replace(/-/g, '. ');
 
-    var allText = S.cards.map(function(c){
-      return (c.title || '') + ' ' + (c.desc || '');
-    }).join(' ') + ' ' + S.topic;
+    var allText = S.cards.map(cardAllText).join(' ') + ' ' + S.topic;
     var coverT = (cover.title || S.topic || '');
 
     /* 이모지는 표지 제목이 정하게 한다.
@@ -1836,15 +2210,18 @@ window.KIT_BACKGROUNDS = [
     var lines = [];
     lines.push(pickEmoji(emoText) + ' ' + (cover.title || S.topic));
     lines.push('');
-    if(cover.desc) lines.push(cover.desc);
+    var coverBody = cardCaptionText(cover);
+    if(coverBody) lines.push(coverBody);
     lines.push('');
     body.forEach(function(c, i){
       var head = (NUM_EMOJI[i] || (i + 1) + '.') + ' ' + (c.title || '');
       lines.push(head);
-      if(c.desc) lines.push(c.desc);
+      var b = cardCaptionText(c);
+      if(b) lines.push(b);
       lines.push('');
     });
-    if(last.desc) lines.push('📩 ' + last.desc);
+    var lastBody = cardCaptionText(last);
+    if(lastBody) lines.push('📩 ' + lastBody);
     lines.push('');
     var dom = (S.sourceDomain || '').trim();
     if(src)  lines.push('📰 출처 · ' + src + (dom ? ' (' + dom + ')' : ''));
