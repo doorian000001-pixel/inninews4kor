@@ -577,16 +577,17 @@ window.KIT_BACKGROUNDS = [
     S.bgApplied = true;
   }
 
+  /* bw = 세부 설명 안 **강조** 의 굵기 */
   var FONTS = {
     kit: { label:'키트 기본 (제목 G마켓 산스 + 본문 Pretendard)',
            tf:"GmarketSans, Pretendard, sans-serif", tw:700,
-           df:"Pretendard, sans-serif",              dw:600 },
+           df:"Pretendard, sans-serif",              dw:600, bw:800 },
     pre: { label:'Pretendard 단독 (권장 · 렌더 일관)',
            tf:"Pretendard, sans-serif", tw:900,
-           df:"Pretendard, sans-serif", dw:600 },
+           df:"Pretendard, sans-serif", dw:600, bw:800 },
     gm:  { label:'G마켓 산스 단독',
            tf:"GmarketSans, sans-serif", tw:700,
-           df:"GmarketSans, sans-serif", dw:500 }
+           df:"GmarketSans, sans-serif", dw:500, bw:700 }
   };
 
   /* ── 해시태그 ─────────────────────────────
@@ -859,8 +860,10 @@ window.KIT_BACKGROUNDS = [
 
     var FOOT_FS = 34, FOOT_LH = 46;
     var FOOT_TOP = H - SAFE - INSET - FOOT_LH * 2;   // 출처·기사 일자 2줄 블록
-    var DIV_Y    = FOOT_TOP - 40;
-    var TITLE_TOP = Math.round(H * 0.28);
+    var DIV_Y    = FOOT_TOP - 32;
+    /* 주제 줄과 제목 사이가 너무 비어 설명이 들어갈 자리를 잡아먹었다.
+       제목을 올려 그만큼을 본문에 넘긴다 (이전 0.28) */
+    var TITLE_TOP = Math.round(H * 0.21);
     var PAD = 72;                                    // 좌우 여백 (이전 90)
 
     return {
@@ -871,8 +874,9 @@ window.KIT_BACKGROUNDS = [
       TITLE_MAX:tmax,
       TITLE_MIN:Math.round(48 * S.titleScale),
       TITLE_LHR:1.22, TITLE_LINES:2,
-      RULE_GAP:40, RULE_W:110, RULE_H:8,
-      DESC_GAP:40, DESC_FS:dfs, DESC_LH:Math.round(dfs * 1.62), DESC_LINES:5,
+      RULE_GAP:32, RULE_W:110, RULE_H:8,
+      /* 줄 간격을 좁히고 상한을 올려 같은 자리에 더 담는다 (이전 1.62 / 5줄) */
+      DESC_GAP:32, DESC_FS:dfs, DESC_LH:Math.round(dfs * 1.48), DESC_LINES:8,
 
       /* 체크리스트·금액 비교의 한 줄 — 제목 1줄일 때 7줄이 들어간다 */
       ROW_FS:Math.round(40 * S.descScale), ROW_LH:Math.round(60 * S.descScale),
@@ -1002,7 +1006,7 @@ window.KIT_BACKGROUNDS = [
             'line-height:' + L.DUE_NOTE_LH + 'px;color:' + KIT.text + ';font-weight:' + F.dw + ';' +
             'display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;' +
             '-webkit-line-clamp:' + M.noteLines + ';max-height:' + (L.DUE_NOTE_LH * M.noteLines) + 'px;">' +
-            esc(c.desc) + '</div>' : '') +
+            runsHtml(parseRuns(c.desc), F.bw) + '</div>' : '') +
       '</div>';
     }
 
@@ -1069,18 +1073,30 @@ window.KIT_BACKGROUNDS = [
       );
       if(M.noteLines > 0 && c.desc){
         g.fillStyle = KIT.text;
-        g.font = F.dw + ' ' + L.DUE_NOTE_FS + 'px ' + F.df;
-        wrapLines(c.desc, L.DUE_NOTE_FS, F.dw, F.df, L.CW, M.noteLines).forEach(function(ln, k){
-          g.fillText(ln, L.PAD, M.noteTop + L.DUE_NOTE_LH * k + L.DUE_NOTE_LH / 2);
-        });
+        drawRunLines(g, parseRuns(c.desc), L.DUE_NOTE_FS, F, L.CW, M.noteLines,
+                     L.PAD, M.noteTop, L.DUE_NOTE_LH);
       }
       return;
     }
 
     g.fillStyle = KIT.text;
-    g.font = F.dw + ' ' + L.DESC_FS + 'px ' + F.df;
-    wrapLines(c.desc, L.DESC_FS, F.dw, F.df, L.CW, M.descLines).forEach(function(ln, k){
-      g.fillText(ln, L.PAD, M.descTop + L.DESC_LH * k + L.DESC_LH / 2);
+    drawRunLines(g, parseRuns(c.desc), L.DESC_FS, F, L.CW, M.descLines,
+                 L.PAD, M.descTop, L.DESC_LH);
+  }
+
+  /* 굵은 조각이 섞인 줄을 왼쪽부터 이어 그린다 */
+  function drawRunLines(g, runs, fs, F, maxW, maxLines, x0, top, lh){
+    var spaceW = measure(' ', fs, F.dw, F.df);
+    wrapRunLines(runs, fs, F, maxW, maxLines).forEach(function(line, k){
+      var x = x0, y = top + lh * k + lh / 2;
+      line.forEach(function(w, wi){
+        if(wi) x += spaceW;
+        w.forEach(function(p){
+          g.font = (p.b ? F.bw : F.dw) + ' ' + fs + 'px ' + F.df;
+          g.fillText(p.t, x, y);
+          x += measure(p.t, fs, p.b ? F.bw : F.dw, F.df);
+        });
+      });
     });
   }
 
@@ -1127,6 +1143,80 @@ window.KIT_BACKGROUNDS = [
       lines[maxLines - 1] = last + '…';
     }
     return lines;
+  }
+
+  /* ── 세부 설명 안의 **강조** ───────────────
+     읽는 사람이 숫자와 기한을 먼저 보게 하려고 굵은 글씨를 섞는다.
+     카드·PNG·캡션이 같은 원문을 쓰되 표시만 달라진다. */
+  function parseRuns(text){
+    var s = (text || '').replace(/\s+/g, ' ');
+    var runs = [], re = /\*\*([^*]+)\*\*/g, last = 0, m;
+    while((m = re.exec(s))){
+      if(m.index > last) runs.push({ t:s.slice(last, m.index), b:false });
+      runs.push({ t:m[1], b:true });
+      last = re.lastIndex;
+    }
+    if(last < s.length) runs.push({ t:s.slice(last), b:false });
+    return runs.length ? runs : [{ t:'', b:false }];
+  }
+  /* 캡션과 글자 수 세기에는 표시를 뺀 알맹이만 쓴다 */
+  function stripMarks(text){ return (text || '').replace(/\*\*/g, ''); }
+
+  /* 굵은 조각이 낱말 가운데서 시작할 수 있다 ('총 **138명**입니다').
+     조각을 낱말로 묶어 두어야 줄바꿈이 낱말을 쪼개지 않는다. */
+  function runWords(runs){
+    var words = [], atBoundary = true;
+    runs.forEach(function(r){
+      var parts = r.t.split(' ');
+      parts.forEach(function(p, i){
+        if(i > 0) atBoundary = true;
+        if(p === '') return;
+        var tk = { t:p, b:r.b };
+        if(!atBoundary && words.length) words[words.length - 1].push(tk);
+        else words.push([tk]);
+        atBoundary = false;
+      });
+    });
+    return words;
+  }
+  function pieceW(p, fs, F){ return measure(p.t, fs, p.b ? F.bw : F.dw, F.df); }
+  function wordW(w, fs, F){
+    var n = 0;
+    for(var i = 0; i < w.length; i++) n += pieceW(w[i], fs, F);
+    return n;
+  }
+  /* wrapLines 의 런 버전 — 줄마다 [[조각,…], …] 을 돌려준다 */
+  function wrapRunLines(runs, fs, F, maxW, maxLines){
+    var words = runWords(runs);
+    var spaceW = measure(' ', fs, F.dw, F.df);
+    var lines = [], cur = [], curW = 0;
+    words.forEach(function(w){
+      var ww = wordW(w, fs, F);
+      var add = cur.length ? spaceW + ww : ww;
+      if(cur.length && curW + add > maxW){ lines.push(cur); cur = [w]; curW = ww; }
+      else { cur.push(w); curW += add; }
+    });
+    if(cur.length) lines.push(cur);
+    if(!lines.length) lines = [[]];
+    if(maxLines && lines.length > maxLines){
+      lines = lines.slice(0, maxLines);
+      var lastLine = lines[maxLines - 1];
+      if(lastLine.length){
+        var lastWord = lastLine[lastLine.length - 1];
+        var lastPiece = lastWord[lastWord.length - 1];
+        lastPiece.t += '…';
+      }
+    }
+    return lines;
+  }
+  function runLineCount(runs, fs, F, maxW){
+    return wrapRunLines(runs, fs, F, maxW, 0).length;
+  }
+  /* 미리보기용 — 굵은 조각만 <b> 로 감싼다 */
+  function runsHtml(runs, bw){
+    return runs.map(function(r){
+      return r.b ? '<b style="font-weight:' + bw + '">' + esc(r.t) + '</b>' : esc(r.t);
+    }).join('');
   }
 
   function rgba(hex, a){
@@ -1276,7 +1366,7 @@ window.KIT_BACKGROUNDS = [
       card.querySelector('[data-eye]').textContent = S.topic;
       card.querySelector('[data-title]').textContent = c.title;
       var dEl = card.querySelector('[data-desc]');
-      if(dEl) dEl.textContent = c.desc;
+      if(dEl) dEl.innerHTML = runsHtml(parseRuns(c.desc), F.bw);
       card.querySelector('.fsrc').textContent  = srcText();
       card.querySelector('.fdate').textContent = dateText();
 
@@ -1329,8 +1419,9 @@ window.KIT_BACKGROUNDS = [
 
       if(dc){
         var lim = (c.kind === 'due') ? M.noteLines : M.descLines;
-        var dl  = c.desc ? wrapAll(c.desc, (c.kind === 'due' ? L.DUE_NOTE_FS : L.DESC_FS),
-                                   F.dw, F.df, L.CW).length : 0;
+        var dl  = c.desc ? runLineCount(parseRuns(c.desc),
+                                        (c.kind === 'due' ? L.DUE_NOTE_FS : L.DESC_FS),
+                                        F, L.CW) : 0;
         dc.textContent = dl + ' / ' + lim + '줄' + (dl > lim ? ' 넘침' : '');
         dc.className = 'counter' + (dl > lim ? ' over' : '');
       }
@@ -1351,7 +1442,7 @@ window.KIT_BACKGROUNDS = [
       var fresh = tmp.firstChild;
       old.parentNode.replaceChild(fresh, old);
       var dEl = card.querySelector('[data-desc]');
-      if(dEl) dEl.textContent = c.desc;
+      if(dEl) dEl.innerHTML = runsHtml(parseRuns(c.desc), F.bw);
       focusable(fresh);
     }
 
@@ -1388,7 +1479,7 @@ window.KIT_BACKGROUNDS = [
       if(c.kind === 'due') paintBlock(M);
       else {
         var dEl = card.querySelector('[data-desc]');
-        if(dEl) dEl.textContent = c.desc;
+        if(dEl) dEl.innerHTML = runsHtml(parseRuns(c.desc), F.bw);
       }
       saveSoon();
     });
@@ -2247,9 +2338,10 @@ window.KIT_BACKGROUNDS = [
       }).join('\n');
     }
     if(c.kind === 'due'){
-      return '📅 ' + dueBig(c) + (c.desc ? '\n' + c.desc : '');
+      return '📅 ' + dueBig(c) + (c.desc ? '\n' + stripMarks(c.desc) : '');
     }
-    return c.desc || '';
+    /* 인스타 캡션은 굵은 글씨가 없다. 표시는 빼고 알맹이만 넣는다 */
+    return stripMarks(c.desc) || '';
   }
   /* 이모지·태그·배경을 고르려고 훑는 글자.
      카드에 실제로 찍히는 것만 센다 — 형태를 바꿔도 desc 는 되돌릴 때를 위해
@@ -2260,8 +2352,8 @@ window.KIT_BACKGROUNDS = [
       return (c.title || '') + ' ' +
              (c.rows || []).map(function(r){ return r.a + ' ' + r.b; }).join(' ');
     }
-    if(k === 'due') return (c.title || '') + ' ' + dueBig(c) + ' ' + (c.desc || '');
-    return (c.title || '') + ' ' + (c.desc || '');
+    if(k === 'due') return (c.title || '') + ' ' + dueBig(c) + ' ' + stripMarks(c.desc);
+    return (c.title || '') + ' ' + stripMarks(c.desc);
   }
 
   function genCaption(){
